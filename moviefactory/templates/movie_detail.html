@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="movie-detail-container">
+
+    <div class="movie-main">
+        <h1>{{ movie.title }}</h1>
+
+        <div class="movie-meta">
+            {% if movie.release_year %}
+                <span>{{ movie.release_year }}</span>
+            {% endif %}
+            {% if movie.genres_text %}
+                <span>· {{ movie.genres_text }}</span>
+            {% endif %}
+        </div>
+
+        <div class="movie-overview">
+            {{ movie.overview }}
+        </div>
+    </div>
+
+    <!-- RIGHT SIDE : YOUTUBE THUMBNAIL -->
+    <div class="movie-side">
+        {% if movie.youtube_key %}
+            <a
+              href="https://www.youtube.com/watch?v={{ movie.youtube_key }}"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="youtube-thumb"
+            >
+                <img
+                  src="https://img.youtube.com/vi/{{ movie.youtube_key }}/hqdefault.jpg"
+                  alt="YouTube trailer"
+                />
+                <div class="play-overlay">▶</div>
+            </a>
+        {% else %}
+            <!-- fallback (원본 UX 유지용) -->
+            <div class="youtube-thumb placeholder">
+                <span>Trailer not available</span>
+            </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<hr />
+
+<!-- SIMILAR MOVIES -->
+{% if similar_movies %}
+<section class="similar-movies">
+    <h2>Similar Movies</h2>
+    <div class="movie-grid">
+        {% for m in similar_movies %}
+        <a href="{{ url_for('movie_detail', movie_id=m.movie_id) }}" class="movie-card">
+            {% if m.poster_url %}
+                <img src="{{ m.poster_url }}" alt="{{ m.title }}" loading="lazy">
+            {% else %}
+                <div class="poster-placeholder"></div>
+            {% endif %}
+            <div class="movie-title">{{ m.title }}</div>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% endblock %}

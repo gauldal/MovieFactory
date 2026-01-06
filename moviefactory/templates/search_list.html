@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!-- =========================================================
+ Search Result Page (search_list.html)
+ FINAL VERSION - v1 FROZEN
+ ========================================================= -->
+
+<div class="search-result-container">
+
+    <!-- ===============================
+     HERO CARD
+     Search Context + Empty State
+     =============================== -->
+    <section class="hero-card hero-search">
+
+        {% if search_type == "text" %}
+            <h1 class="hero-title">검색 결과</h1>
+            <p class="hero-desc">
+                “{{ query }}” 에 대한 검색 결과입니다.
+            </p>
+
+        {% elif search_type == "image" %}
+            <h1 class="hero-title">이미지 검색 결과</h1>
+            <p class="hero-desc">
+                업로드한 이미지를 기반으로 유사한 영화를 탐색합니다.
+            </p>
+
+        {% elif search_type == "genre" %}
+            <h1 class="hero-title">장르 탐색</h1>
+            <p class="hero-desc">
+                {{ genre }} 장르에 해당하는 영화 목록입니다.
+            </p>
+
+        {% else %}
+            <h1 class="hero-title">영화 탐색</h1>
+            <p class="hero-desc">
+                다양한 영화를 탐색해 보세요.
+            </p>
+        {% endif %}
+
+        {% if not movies or movies|length == 0 %}
+            <p class="hero-desc no-result">
+                검색 결과가 없습니다.
+            </p>
+        {% endif %}
+
+    </section>
+
+    <!-- ===============================
+     SEARCH RESULT GRID
+     =============================== -->
+    {% if movies and movies|length > 0 %}
+    <section class="movie-grid">
+        {% for movie in movies %}
+        <div class="movie-card">
+            <a href="{{ url_for('movie_detail', movie_id=movie.movie_id) }}">
+
+                <div class="poster-wrapper">
+                    {% if movie.poster_url %}
+                        <img
+                            src="{{ movie.poster_url }}"
+                            alt="{{ movie.title }}"
+                            class="movie-poster"
+                        >
+                    {% else %}
+                        <div class="poster-placeholder">
+                            No Image
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="movie-info">
+                    <h3 class="movie-title">
+                        {{ movie.title }}
+                    </h3>
+
+                    <div class="movie-meta">
+                        {% if movie.release_year %}
+                            <span class="meta-item">
+                                {{ movie.release_year }}
+                            </span>
+                        {% endif %}
+
+                        {% if movie.genres_text %}
+                            <span class="meta-item">
+                                {{ movie.genres_text }}
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+            </a>
+        </div>
+        {% endfor %}
+    </section>
+    {% endif %}
+
+    <!-- ===============================
+     PAGINATION
+     Server-generated URLs
+     =============================== -->
+    {% if movies and movies|length > 0 and total_pages and total_pages > 1 %}
+    <nav class="pagination">
+
+        {% if prev_page_url %}
+            <a class="page-btn" href="{{ prev_page_url }}">
+                이전
+            </a>
+        {% endif %}
+
+        <span class="page-status">
+            {{ current_page }} / {{ total_pages }}
+        </span>
+
+        {% if next_page_url %}
+            <a class="page-btn" href="{{ next_page_url }}">
+                다음
+            </a>
+        {% endif %}
+
+    </nav>
+    {% endif %}
+
+</div>
+
+{% endblock %}

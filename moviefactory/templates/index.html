@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!-- ================= HERO ================= -->
+<section class="hero">
+    <div class="hero-inner">
+        <h1 class="hero-title">
+            {{ hero_summary.title if hero_summary else "MovieFactory" }}
+        </h1>
+        <p class="hero-desc">
+            {{ hero_summary.desc if hero_summary else "AI-powered Movie Discovery Platform" }}
+        </p>
+
+        {% if hero_summary and hero_summary.details %}
+        <ul class="hero-details">
+            {% for d in hero_summary.details %}
+                <li>{{ d }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+</section>
+
+<!-- ================= FEATURED MOVIES ================= -->
+<section class="featured-section">
+    <h2 class="section-title">Featured Movies</h2>
+
+    {% if featured_movies and featured_movies|length > 0 %}
+        <div class="movie-grid">
+            {% for movie in featured_movies %}
+                <div class="movie-card">
+                    <a href="{{ url_for('movie_detail', movie_id=movie.movie_id) }}">
+                        <div class="poster-wrapper">
+                            {% if movie.poster_url %}
+                                <img src="{{ movie.poster_url }}"
+                                     alt="{{ movie.title }}"
+                                     loading="lazy">
+                            {% else %}
+                                <div class="poster-placeholder">
+                                    No Image
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="movie-meta">
+                            <h3 class="movie-title">{{ movie.title }}</h3>
+                            {% if movie.release_year %}
+                                <span class="movie-year">{{ movie.release_year }}</span>
+                            {% endif %}
+                        </div>
+                    </a>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <!-- Safe Empty State -->
+        <div class="empty-featured">
+            <p>Start searching to discover great movies.</p>
+        </div>
+    {% endif %}
+</section>
+
+{% endblock %}

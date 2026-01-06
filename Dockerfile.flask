@@ -1,0 +1,64 @@
+# ============================================================
+# MovieFactory v1 — Flask (CPU) Runtime Image
+# - Replaces Dockerfile.cpu
+# - Flask Web Service only
+# - SBERT / TF-IDF / CF / CLIP(CPU) supported
+# ============================================================
+
+FROM python:3.10-slim
+
+# ------------------------------------------------------------
+# System settings
+# ------------------------------------------------------------
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# ------------------------------------------------------------
+# Work directory
+# ------------------------------------------------------------
+WORKDIR /app
+
+# ------------------------------------------------------------
+# Install system dependencies (minimal)
+# ------------------------------------------------------------
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    git \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# ------------------------------------------------------------
+# Install Python dependencies
+# ------------------------------------------------------------
+COPY requirements_app.txt .
+COPY requirements_engine.txt .
+
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir \
+        -r requirements_app.txt \
+        -r requirements_engine.txt
+
+# ------------------------------------------------------------
+# Copy application source
+# ------------------------------------------------------------
+COPY moviefactory /app/moviefactory
+COPY templates /app/templates
+COPY static /app/static
+COPY data /app/data
+
+# NOTE:
+# - .cache directory is intentionally NOT copied
+# - cache files (embeddings) are generated at runtime or builder stage
+
+# ------------------------------------------------------------
+# Expose Flask port
+# ------------------------------------------------------------
+EXPOSE 5000
+
+# ------------------------------------------------------------
+# Entrypoint
+# ------------------------------------------------------------
+# v1 contract:
+# Flask must be launched via module execution
+# (NOT flask run, NOT app.py)
+CMD ["python", "-m", "moviefactory.app.main"]

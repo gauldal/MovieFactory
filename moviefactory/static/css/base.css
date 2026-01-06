@@ -1,0 +1,251 @@
+/* =====================
+   RESET (안 건드림)
+===================== */
+html, body {
+    height: 100%;
+}
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: inherit;      /* 로고와 동일한 폰트 계열 유지 */
+    font-weight: 500;          /* 기본 400 → 500 (b 없이도 선명) */
+    letter-spacing: -0.2px;    /* 로고 특유의 응집감 */
+    color: #1f1f1f;            /* 너무 연하지 않게 */
+
+    /* ⬇⬇⬇ 여기만 추가 */
+    display: flex;
+    flex-direction: column;
+}
+
+/* =====================
+   HEADER
+===================== */
+.top-header {
+    border-bottom: 1px solid #eee;
+    background: #fff;
+}
+
+.header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+}
+
+/* ===============================
+   LOGO (GLOBAL – FROZEN RULE)
+   =============================== */
+
+.logo a,
+.logo a:visited,
+.logo a:hover,
+.logo a:active {
+    color: #000;
+    text-decoration: none;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+/* =====================
+   GENRE TABS (핵심)
+===================== */
+.genre-tabs {
+    display: flex;
+    gap: 10px;
+    padding: 6px 10px;
+    background: transparent;   /* ← 배경 제거 */
+    border: none;              /* ← 테두리 제거 */
+}
+
+/* ❗ 개별 버튼은 배경 유지 */
+.genre-tab {
+    font-family: inherit; 
+    font-weight: 500; 
+    letter-spacing: -0.2px; 
+    color: #1f1f1f;  
+    padding: 8px 16px;
+    font-size: 14px;
+    border-radius: 999px;
+    border: none;
+    background: #fff;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+/* hover (은은하게 유지) */
+.genre-tab:hover {
+    background: #eaeaea;
+}
+
+/* =====================
+   HEADER RIGHT
+===================== */
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.login-btn {
+    font-family: inherit;
+    font-weight: 500;
+    letter-spacing: -0.2px;
+    padding: 8px 14px;
+    font-size: 14px;
+    border-radius: 999px;
+    border: 1px solid #ddd;
+    background: #fff;
+    cursor: pointer;
+}
+
+.bell {
+    font-size: 18px;
+}
+
+/* =====================
+   SEARCH ROW
+===================== */
+.search-row {
+    display: flex;
+    justify-content: center;
+    padding: 14px 0;
+}
+
+.search-form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: 640px;
+    width: 100%;
+}
+
+.search-input {
+    flex: 1;
+    padding: 12px 18px;
+    font-family: inherit;
+    font-weight: 400;
+    letter-spacing: 0;
+    color: #9a9a9a;
+    font-size: 14px;
+    border-radius: 999px;
+    border: 1px solid #ddd;
+}
+
+.photo-btn {
+    padding: 10px 18px;
+    font-family: inherit;
+    font-weight: 500;
+    letter-spacing: -0.1px;
+    color: #555;
+    font-size: 14px;
+    border-radius: 999px;
+    border: 1px solid #ddd;
+    background: #fff;
+    cursor: pointer;
+}
+.photo-btn:hover {
+    background: #eaeaea;
+}
+/* =====================
+   LAYOUT
+===================== */
+.layout {
+    display: flex;
+    flex: 1;          /* ⭐ 이 한 줄이 핵심 */
+}
+
+/* =====================
+   SIDEBAR (절대 크기 변경 없음)
+===================== */
+.sidebar {
+    width: 220px;
+    padding: 20px;
+    border-right: 1px solid #eee;
+}
+
+.sidebar h3 {
+    margin-top: 0;
+    font-size: 14px;
+}
+
+.genre-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.genre-list li a {
+    display: block;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #eee;
+    margin-bottom: 8px;
+    font-size: 14px;
+    text-decoration: none;
+    color: #111;
+}
+.genre-list li a:hover {
+    background: #eaeaea;
+}
+/* =====================
+   CONTENT
+===================== */
+.content {
+    flex: 1;
+    padding: 24px;
+}
+
+/* =========================
+   Footer Dashboard (Refined)
+   ========================= */
+
+.footer-dashboard {
+    margin-top: 40px;
+    padding: 12px 0;
+    background: transparent;
+    color: #999;                /* 색 다운 */
+    font-size: 12px;            /* Login 버튼 체감 크기 */
+}
+
+.footer-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;     /* 한 줄 → 두 줄 느낌 방지 */
+    align-items: center;        /* 가운데 정렬 */
+    gap: 4px;
+    text-align: center;
+}
+
+.footer-left,
+.footer-right {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+}
+
+.footer-brand {
+    font-weight: 500;           /* 튀지 않게 */
+}
+
+.footer-sep {
+    opacity: 0.5;
+}
+/* Login button - disabled look */
+.login-btn {
+    color: #777;          /* 진회색 */
+    background: none;
+    border: none;
+    cursor: default;
+    opacity: 0.8;
+}
+
+.login-btn:hover {
+    color: #777;          /* hover 시에도 변화 없음 */
+}
