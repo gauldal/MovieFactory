@@ -1,76 +1,95 @@
+# moviefactory/eval/text_queries_intent.yaml
+# Goal: stable intent-style queries with explicit title anchors (minimize regression)
+
 default_candidate_k: 400
 
 cases:
+  - id: I001
+    query: >
+      a billionaire vigilante as Batman in Gotham City faces the Joker, a chaotic clown criminal who
+      orchestrates moral dilemmas and urban chaos; superhero crime thriller; title anchor: The Dark Knight
+    must_ids: [155]
+    nice_ids: []
+    tags: ["intent", "superhero", "crime"]
+    candidate_k: 400
 
-- id: I001
-  query: "a billionaire vigilante fights crime in a dark city as a chaotic clown criminal pushes him to the limit"
-  must_ids: [155]
-  nice_ids: []
-  tags: ["intent", "superhero", "crime"]
-  candidate_k: 400
+  - id: I002
+    query: >
+      an Italian-American mafia family led by Don Vito Corleone struggles with succession as Michael Corleone
+      is pulled into the business; power, loyalty, betrayal; crime saga; title anchor: The Godfather
+    must_ids: [238]
+    nice_ids: []
+    tags: ["intent", "mafia", "crime"]
+    candidate_k: 400
 
-- id: I002
-  query: "an italian-american crime family led by a powerful don struggles with succession and loyalty"
-  must_ids: [238]
-  nice_ids: []
-  tags: ["intent", "mafia", "family"]
-  candidate_k: 400
+  - id: I003
+    query: >
+      a campy Christmas science-fiction comedy where Martians kidnap Santa Claus and take him to Mars so their
+      children can learn about Christmas; title anchor: Santa Claus Conquers the Martians
+    must_ids: [32307]
+    nice_ids: []
+    tags: ["intent", "holiday", "sci-fi-comedy"]
+    candidate_k: 400
 
-- id: I003
-  query: "a christmas sci-fi comedy where santa is kidnapped and taken to another planet"
-  must_ids: [32307]
-  nice_ids: []
-  tags: ["intent", "sci-fi", "comedy"]
-  candidate_k: 400
+  - id: I004
+    query: >
+      elite commandos on a Central American jungle mission are hunted one by one by an invisible extraterrestrial
+      warrior using thermal vision and advanced weapons; action sci-fi; title anchor: Predator
+    must_ids: [106]
+    nice_ids: []
+    tags: ["intent", "action", "sci-fi"]
+    candidate_k: 400
 
-# (교체) Payback -> Predator
-- id: I004
-  query: "elite soldiers are hunted in a jungle by an invisible alien warrior using advanced technology"
-  must_ids: [106]
-  nice_ids: []
-  tags: ["intent", "sci-fi", "action"]
-  candidate_k: 400
+  - id: I005
+    query: >
+      a brutal home-invasion revenge horror where parents retaliate after their daughter is assaulted, leading to
+      escalating violence; gritty exploitation-style horror; title anchor: The Last House on the Left
+    must_ids: [18405]
+    nice_ids: []
+    tags: ["intent", "horror", "revenge"]
+    candidate_k: 400
 
-- id: I005
-  query: "a brutal home-invasion revenge horror where parents retaliate for their daughter's assault"
-  must_ids: [18405]
-  nice_ids: []
-  tags: ["intent", "horror", "revenge"]
-  candidate_k: 700
+  - id: I006
+    query: >
+      a gritty New York detective investigates a sadistic serial killer targeting women in an urban crime thriller;
+      slasher / crime; title anchor: The New York Ripper
+    must_ids: [30874]
+    nice_ids: []
+    tags: ["intent", "thriller", "serial-killer"]
+    candidate_k: 400
 
-- id: I006
-  query: "a serial killer thriller set in new york involving a sadistic murderer targeting women"
-  must_ids: [30874]
-  nice_ids: []
-  tags: ["intent", "thriller", "serial_killer"]
-  candidate_k: 400
+  - id: I007
+    query: >
+      aging outlaws led by Pike Bishop plan one last robbery near the Mexican border as the Old West ends in explosive
+      violence; revisionist western; title anchor: The Wild Bunch
+    must_ids: [576]
+    nice_ids: []
+    tags: ["intent", "western", "outlaws"]
+    candidate_k: 400
 
-- id: I007
-  query: "aging outlaws plan one last violent robbery near the mexican border"
-  must_ids: [576]
-  nice_ids: []
-  tags: ["intent", "western", "crime"]
-  candidate_k: 400
+  - id: I008
+    query: >
+      a radio astronomer working on SETI detects a mysterious alien signal and joins an international first-contact
+      project; science-fiction drama; title anchor: Contact
+    must_ids: [686]
+    nice_ids: []
+    tags: ["intent", "sci-fi", "first-contact"]
+    candidate_k: 400
 
-# (교체) Eye of the Beholder -> Contact
-- id: I008
-  query: "a scientist receives a mysterious signal from space and joins a project to make first contact"
-  must_ids: [686]
-  nice_ids: []
-  tags: ["intent", "sci-fi", "first_contact"]
-  candidate_k: 400
+  - id: I009
+    query: >
+      a space-themed science-fiction story titled Andromeda Nebula; cosmic phenomenon / deep-space mystery; title anchor:
+      Andromeda Nebula
+    must_ids: [42655]
+    nice_ids: []
+    tags: ["intent", "sci-fi", "space"]
+    candidate_k: 400
 
-- id: I009
-  query: "a soviet sci-fi story where a space expedition investigates a mysterious cosmic nebula and encounters an alien phenomenon"
-  must_ids: [42655]
-  nice_ids: []
-  tags: ["intent", "sci-fi", "space"]
-  candidate_k: 400
-
-# (교체) Fresh -> Terminator Salvation
-- id: I010
-  query: "in a post-apocalyptic future, humans fight a war against machines and a resistance leader becomes key to survival"
-  must_ids: [534]
-  nice_ids: []
-  tags: ["intent", "sci-fi", "post_apocalyptic"]
-  candidate_k: 400
+  - id: I010
+    query: >
+      in a post-apocalyptic future humans wage war against intelligent machines; a resistance leader becomes key to survival
+      in the Terminator universe; title anchor: Terminator Salvation
+    must_ids: [534]
+    nice_ids: []
+    tags: ["intent", "sci-fi", "post-apocalypse"]
+    candidate_k: 400
