@@ -35,6 +35,7 @@ docker-data/
 Thumbs.db
 
 moviefactory/.cache/
+# eval outputs
 moviefactory/eval/eval_reports/
 __pycache__/
 *.pyc

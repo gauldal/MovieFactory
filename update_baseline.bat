@@ -1,23 +1,25 @@
 @echo off
 setlocal
 
+REM ===== MovieFactory baseline updater (separate to avoid accidents) =====
 cd /d "%~dp0"
 
-echo ==========================================
-echo  Update Baseline (INTENDED ONLY)
-echo ==========================================
-echo.
-
-python -m moviefactory.eval.regression_check moviefactory\eval\text_queries_intent.yaml --update-baseline
-set ERR=%ERRORLEVEL%
+set "YAML=moviefactory\eval\text_queries_intent.yaml"
 
 echo.
-if NOT "%ERR%"=="0" (
-  echo ❌ FAILED to update baseline (exitcode=%ERR%)
-  pause
-  exit /b %ERR%
+echo [RUN] python -m moviefactory.eval.regression_check %YAML% --update-baseline
+echo.
+
+python -m moviefactory.eval.regression_check "%YAML%" --update-baseline
+set "EC=%ERRORLEVEL%"
+
+echo.
+if "%EC%"=="0" (
+  echo ✅ Baseline updated.
 ) else (
-  echo ✅ Baseline updated: moviefactory\eval\baseline.json
-  pause
-  exit /b 0
+  echo ❌ Failed to update baseline. (exitcode=%EC%)
 )
+
+echo.
+pause
+exit /b %EC%

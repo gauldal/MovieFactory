@@ -1,29 +1,25 @@
 @echo off
-setlocal
+setlocal enabledelayedexpansion
 
+REM ===== MovieFactory one-click regression check (CI-identical) =====
 cd /d "%~dp0"
 
-echo.
-echo ====================================================
-echo   MovieFactory Search Regression Check
-echo ====================================================
-echo.
-
-python -m moviefactory.eval.regression_check moviefactory\eval\text_queries_intent.yaml
-set ERR=%ERRORLEVEL%
+set "YAML=moviefactory\eval\text_queries_intent.yaml"
 
 echo.
-if NOT "%ERR%"=="0" (
-    echo ####################################################
-    echo  ❌ REGRESSION FOUND
-    echo  Check: moviefactory\eval\eval_reports\latest.json
-    echo ####################################################
+echo [RUN] python -m moviefactory.eval.regression_check %YAML%
+echo.
+
+python -m moviefactory.eval.regression_check "%YAML%"
+set "EC=%ERRORLEVEL%"
+
+echo.
+if "%EC%"=="0" (
+  echo ✅ PASS (no regression)
 ) else (
-    echo ####################################################
-    echo  ✅ PASS - NO REGRESSION
-    echo ####################################################
+  echo ❌ FAIL (regression detected or error)  (exitcode=%EC%)
 )
 
 echo.
 pause
-exit /b %ERR%
+exit /b %EC%
