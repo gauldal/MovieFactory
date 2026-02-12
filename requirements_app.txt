@@ -1,0 +1,18 @@
+# MovieFactory Application Requirements
+#
+# 이 파일은 Flask 기반 Web UI / API Layer 전용 의존성이다.
+# - Routing
+# - Request / Response
+# - Template Rendering
+#
+# ❌ 모델 학습 / 추론 라이브러리 포함 금지
+# ❌ 대규모 수치 계산 라이브러리 의존 금지
+#
+# Engine 계산 결과를 "표현"하는 책임만 가진다.
+
+flask
+jinja2
+pandas
+numpy
+pillow
+requests

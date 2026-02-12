@@ -1,0 +1,40 @@
+# ===============================
+# Python / Virtual Environment
+# ===============================
+.venv/
+__pycache__/
+*.pyc
+
+# ===============================
+# Engine / Runtime Cache
+# ===============================
+.cache/
+*.npy
+*.npz
+*.pkl
+
+# ===============================
+# Docker
+# ===============================
+*.log
+docker-data/
+.env
+
+# ===============================
+# IDE (PyCharm / IntelliJ)
+# ===============================
+.idea/
+*.iml
+/shelf/
+/workspace.xml
+
+# ===============================
+# OS
+# ===============================
+.DS_Store
+Thumbs.db
+
+moviefactory/.cache/
+moviefactory/eval/eval_reports/
+__pycache__/
+*.pyc

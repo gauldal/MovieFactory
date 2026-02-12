@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>MovieFactory</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/mobile.css') }}">
+</head>
+<body>
+
+<!-- =========================
+     MOBILE HEADER
+========================= -->
+<header class="m-header">
+  <div class="m-header-inner">
+
+    <!-- Hamburger -->
+    <button class="m-menu-btn" id="gm-open">☰</button>
+
+    <!-- Logo -->
+    <a href="/" class="m-logo">MovieFactory</a>
+
+    <!-- Icons -->
+    <div class="m-icons">
+      <a href="#" aria-label="Profile">👤</a>
+    </div>
+
+  </div>
+</header>
+
+<!-- =========================
+     GLOBAL SEARCH (MOBILE)
+     🔑 TEXT = GET / IMAGE = POST
+========================= -->
+<form
+  class="m-search m-search-global"
+  action="/search"
+  method="get"
+>
+
+  <!-- TEXT SEARCH -->
+  <input
+    type="text"
+    name="q"
+    placeholder="Search for movies..."
+  >
+
+  <!-- IMAGE UPLOAD (CLIP) -->
+  <input
+    type="file"
+    name="image"
+    accept="image/*"
+    id="m-image-input"
+    hidden
+  >
+
+  <!-- PHOTO BUTTON -->
+  <button
+    type="button"
+    class="m-photo-btn"
+    onclick="document.getElementById('m-image-input').click();"
+  >
+    Photo
+  </button>
+
+</form>
+
+<!-- =========================
+     GENRE SLIDE PANEL
+========================= -->
+<div id="genre-overlay" class="gm-overlay"></div>
+
+<aside id="genre-panel" class="gm-panel">
+  <div class="gm-header">
+    <span>Genres</span>
+    <span
+      id="gm-close"
+      role="button"
+      aria-label="Close"
+      class="gm-close-btn"
+    >✕</span>
+  </div>
+
+  <nav class="gm-list">
+    {% for g in ["Action","Adventure","Animation","Comedy","Crime","Drama","Fantasy","Horror","Romance","SF","Thriller","War"] %}
+      <a href="/search?genre={{ g }}">{{ g }}</a>
+    {% endfor %}
+  </nav>
+</aside>
+
+<!-- =========================
+     MAIN CONTENT
+========================= -->
+<main class="m-main">
+  {% block content %}{% endblock %}
+</main>
+
+<!-- =========================
+     BOTTOM NAV
+========================= -->
+<nav class="m-bottom-nav">
+  <a href="/">Home</a>
+  <a href="#" onclick="document.querySelector('.m-search input[type=text]').focus(); return false;">Search</a>
+  <a href="#">Favorites</a>
+  <a href="#">Profile</a>
+</nav>
+
+<!-- =========================
+     JS
+========================= -->
+<script src="{{ url_for('static', filename='js/mobile.js') }}"></script>
+
+<script>
+  // 🔑 IMAGE SEARCH ONLY → POST
+  document.getElementById("m-image-input").addEventListener("change", function () {
+    if (this.files.length > 0) {
+      const form = this.form;
+      form.method = "post";
+      form.enctype = "multipart/form-data";
+      form.submit();
+    }
+  });
+</script>
+
+</body>
+</html>

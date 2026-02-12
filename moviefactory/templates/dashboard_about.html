@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="mf-dashboard-about">
+
+  <div class="mf-dashboard-about-inner">
+
+    <!-- =========================
+         TOP NAV
+    ========================= -->
+    <a href="/dashboard" class="mf-dashboard-link">
+      ← Back to Dashboard
+    </a>
+
+    <!-- =========================
+         STREAMLIT NOTICE (SUBTLE BOX)
+    ========================= -->
+    <div
+      style="
+        margin-top: 12px;
+        margin-bottom: 28px;
+        padding: 12px 14px;
+        background: #f6f7f9;
+        border-radius: 8px;
+        font-size: 13px;
+        color: #777;
+        line-height: 1.6;
+        max-width: 640px;
+      "
+    >
+      <div>
+        Streamlit analytics runs as a separate process.
+        <a
+          href="http://127.0.0.1:8501"
+          target="_blank"
+          style="color: #777; text-decoration: underline;"
+        >
+          Open Streamlit Analytics →
+        </a>
+      </div>
+
+      <div style="margin-top: 6px;">
+        cd C:\IT\movie_factory\movie_factory_project<br />
+        python -m streamlit run moviefactory/dashboard/streamlit_app.py
+      </div>
+    </div>
+
+    <!-- =========================
+         MAIN CONTENT
+    ========================= -->
+
+    <h1>MovieFactory Hybrid Recommendation System</h1>
+
+    <p class="mf-about-intro">
+      MovieFactory is a hybrid recommendation system that combines multiple
+      independent retrieval engines into a single, unified decision pipeline.
+      Rather than relying on a single algorithm, it integrates complementary
+      signals to achieve more robust and explainable recommendations.
+    </p>
+
+    <hr />
+
+    <h2>Hybrid Architecture Overview</h2>
+
+    <p>
+      The system aggregates results from four independent engines:
+    </p>
+
+    <ul>
+      <li><strong>TF-IDF</strong> — Keyword-based lexical matching</li>
+      <li><strong>SBERT</strong> — Semantic text embedding similarity</li>
+      <li><strong>CLIP</strong> — Cross-modal image-text similarity</li>
+      <li><strong>CF-SVD</strong> — Collaborative filtering via latent factors</li>
+    </ul>
+
+    <p>
+      Each engine produces a ranked signal. These signals are combined
+      by a centralized Hybrid Engine that determines the final recommendation
+      order.
+    </p>
+
+    <hr />
+
+    <h2>Hybrid Weights Policy (v1)</h2>
+
+    <p>
+      In the current <strong>v1 implementation</strong>, hybrid weights are
+      <strong>fixed in code</strong> to ensure deterministic behavior,
+      reproducibility, and architectural stability.
+    </p>
+
+    <p>
+      The Dashboard does <strong>not</strong> modify runtime weights, and no
+      configuration files are written during operation.
+      All recommendations are generated using predefined, version-controlled
+      weight presets.
+    </p>
+
+    <p class="mf-note">
+      Weight adjustment through a user interface is intentionally disabled
+      in v1 and may be explored in a future experimental version.
+    </p>
+
+    <hr />
+
+    <h2>Dashboard Scope</h2>
+
+    <p>
+      The Flask-based Dashboard focuses on service-level interaction such as
+      search execution and result inspection.
+      Analytical exploration and visualization are intentionally separated
+      from the service layer.
+    </p>
+
+    <ul>
+      <li>Search execution (Text / Image / CF)</li>
+      <li>Result inspection and diagnostics</li>
+      <li>System-level overview</li>
+    </ul>
+
+    <hr />
+
+    <h2>Analytical View (Streamlit)</h2>
+
+    <p>
+      The analytical dashboard is provided as a separate
+      <strong>Streamlit application</strong>.
+      It runs independently from the Flask service layer and operates in
+      <strong>read-only mode</strong>.
+    </p>
+
+    <p>
+      This separation avoids security and embedding constraints while keeping
+      system responsibilities clear.
+    </p>
+
+  </div>
+
+</section>
+
+{% endblock %}

@@ -1,0 +1,335 @@
+/* ======================================================
+   RESET / GLOBAL
+====================================================== */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #111;
+}
+
+/* LINK RESET */
+a,
+a:visited,
+a:hover,
+a:active {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* ======================================================
+   HEADER (동결)
+====================================================== */
+.top-header {
+  width: 100%;
+  border-bottom: 1px solid #eee;
+  background: #fff;
+}
+
+.header-grid {
+  display: grid;
+  grid-template-columns: 240px 1fr 240px;
+  align-items: center;
+  padding: 18px 24px;
+}
+
+.header-left .logo {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+  color: #000;
+}
+
+.header-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+/* GENRE NAV */
+.genre-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.genre-tabs a {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  padding: 6px 12px;
+  border-radius: 999px;
+}
+
+.genre-tabs a:hover {
+  background: #ededed;
+}
+
+/* SEARCH */
+.search-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.search-form {
+  width: 420px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px 18px;
+  font-size: 14px;
+  border-radius: 999px;
+  border: 1px solid #ddd;
+  background: #fafafa;
+}
+
+.search-input::placeholder {
+  color: #aaa;
+}
+
+.photo-btn {
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 999px;
+  border: 1px solid #ddd;
+  background: #fff;
+  cursor: pointer;
+}
+
+.photo-btn:hover {
+  background: #ededed;
+}
+
+/* HEADER RIGHT */
+.header-right {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.header-right .bell {
+  font-size: 18px;
+  opacity: 0.4;
+}
+
+/* ======================================================
+   CLIP MODAL (유지)
+====================================================== */
+.clip-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+#clip-toggle:checked + .clip-modal,
+#clip-toggle:checked ~ .clip-modal {
+  display: flex;
+}
+
+.clip-modal-content {
+  width: 360px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.clip-modal-header {
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.clip-modal-actions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.clip-btn {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.clip-btn.cancel {
+  background: #f2f2f2;
+}
+
+.clip-btn.search {
+  background: #111;
+  color: #fff;
+  border: none;
+}
+
+/* ======================================================
+   PAGE GRID
+====================================================== */
+.page-grid {
+  display: grid;
+  grid-template-columns: 220px 1fr 220px;
+  width: 100%;
+  min-height: calc(100vh - 140px);
+}
+
+/* ======================================================
+   SIDEBAR (좌·우 공통 UX 기준)
+====================================================== */
+.left-sidebar,
+.right-sidebar {
+  padding: 20px;
+  background: #fff;
+}
+
+.left-sidebar {
+  border-right: 1px solid #eee;
+}
+
+.right-sidebar {
+  border-left: 1px solid #eee;
+}
+
+/* SIDEBAR TITLE */
+.left-sidebar h3,
+.right-sidebar h3 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #111;
+}
+
+/* MENU LIST */
+.genre-list,
+.right-menu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* MENU ITEM */
+.genre-list li,
+.right-menu li {
+  margin-bottom: 8px;
+}
+
+/* MENU BUTTON (좌·우 메뉴 톤 정리 핵심) */
+.genre-list a,
+.right-menu-btn {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 14px;
+
+  /* 🔑 추가된 타이포 정리 */
+  font-weight: 545;
+  letter-spacing: -0.12px;
+  line-height: 1.35;
+
+  color: #111;
+  background: #fff;
+  border: 1.9px solid #eee;
+  border-radius: 8px;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+/* HOVER (좌·우 동일) */
+.genre-list a:hover,
+.right-menu-btn:hover {
+  background: #ededed;
+  border-color: #ddd;
+}
+
+/* ======================================================
+   CENTER CONTAINER (SHELL ONLY)
+====================================================== */
+.main-content {
+  padding: 24px 32px;
+  overflow-x: hidden;
+}
+
+/* ======================================================
+   FOOTER
+====================================================== */
+.footer-dashboard {
+  border-top: 1px solid #eee;
+  padding: 16px 0;
+}
+
+.footer-inner {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.footer-link {
+  text-decoration: none;
+}
+
+/* ======================================================
+   BOTTOM STICKY BAR (FOOTER ABOVE)
+====================================================== */
+.mf-bottom-bar {
+  position: sticky;
+  bottom: 0;
+  width: 100%;
+  height: 42px;
+
+  background: rgba(255, 255, 255, 0.94);
+  border-top: 1px solid #eee;
+  backdrop-filter: blur(6px);
+
+  z-index: 50;
+}
+
+.mf-bottom-inner {
+  height: 100%;
+  padding: 0 24px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  font-size: 13px;
+}
+
+.mf-bottom-label {
+  color: #777;
+  margin-right: 4px;
+}
+
+.mf-bottom-value {
+  font-weight: 600;
+  letter-spacing: -0.2px;
+}
+
+.mf-bottom-btn,
+.mf-bottom-link {
+  margin-left: 14px;
+  font-weight: 500;
+  letter-spacing: -0.2px;
+  cursor: pointer;
+}
+
+.mf-bottom-btn:hover,
+.mf-bottom-link:hover {
+  text-decoration: underline;
+}
+/* footer 바로 위에서 보조바 분리감 제거 */
+.footer-dashboard {
+  border-top: none;
+}

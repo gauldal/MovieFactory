@@ -1,0 +1,31 @@
+{
+  "version": "v1.1-final",
+  "mode": "FAST",
+  "build_time": "2025-12-31T09:10:58.826336",
+
+  "data": {
+    "source_csv": "moviefactory/data/movie_clean_data.csv",
+    "row_count": null,
+    "notes": "전처리 완료 CSV 기준. row_count는 빌드 시점에 선택적으로 기록"
+  },
+
+  "cache": {
+    "sbert": true,
+    "tfidf": true,
+    "cf": true,
+    "clip": true,
+    "notes": "Hybrid는 사전 캐시를 생성하지 않음"
+  },
+
+  "hybrid": {
+    "weights_path": "moviefactory/config/hybrid_weights.json",
+    "weights_externalized": true,
+    "runtime_combination": true
+  },
+
+  "builder": {
+    "script": "zip_builder_final.py",
+    "single_entry_point": true,
+    "reproducible": true
+  }
+}

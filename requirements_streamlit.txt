@@ -1,0 +1,17 @@
+# MovieFactory Streamlit Dashboard Requirements
+#
+# 이 파일은 분석 / 운영 시각화 전용 Dashboard Layer를 위한 의존성이다.
+# - 검색 결과 분석
+# - 캐시 상태 시각화
+# - Hybrid 가중치 조정 UI
+#
+# ❌ Engine 계산 로직 포함 금지
+# ❌ Runtime 판단 로직 포함 금지
+#
+# 운영·분석 목적에 한정된 의존성만 포함한다.
+
+streamlit
+pandas
+numpy
+requests
+matplotlib

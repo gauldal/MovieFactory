@@ -1,0 +1,1002 @@
+/* content.css — UI components only (no layout skeleton) */
+
+/* ======================================================
+   MOVIE GRID — SINGLE SOURCE OF TRUTH (GLOBAL)
+   - Applies to: Index / Search / Similar / Recommend
+   - Grid geometry must NEVER be overridden downstream
+====================================================== */
+.mf-movie-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 180px); /* fixed column baseline */
+    gap: 20px;
+}
+
+/* ======================================================
+   SECTION WRAPPER (GLOBAL)
+   - Semantic grouping only
+   - Must NOT affect card or grid geometry
+====================================================== */
+.section {
+    margin-bottom: 32px;
+}
+
+.section-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 18px;
+}
+
+/* ======================================================
+   SIMILAR MOVIES (SECTION-LOCAL TUNING)
+   - Scoped adjustment only
+   - Does not modify grid or card rules
+====================================================== */
+.similar-movies {
+    margin-top: -10px; /* visual alignment tweak (locked) */
+}
+
+.similar-movies .section-title {
+    font-size: 18px;
+}
+
+/* ======================================================
+   CONTENT HORIZONTAL BALANCE (GLOBAL FIX)
+   - Visual centering correction
+   - Grid geometry itself remains untouched
+====================================================== */
+.mf-movie-grid {
+    margin-left: 0;
+}
+
+/* ======================================================
+   GLOBAL COMPONENT — MOVIE CARD
+   Used in: HOME / SEARCH / RECOMMEND / ENGINE
+====================================================== */
+
+.mf-movie-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mf-movie-card a {
+    text-decoration: none;
+    color: inherit;
+}
+
+/* ===============================
+   Poster
+=============================== */
+
+.mf-poster-wrapper {
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    background-color: #eee;
+    overflow: hidden;
+    border-radius: 8px;
+}
+
+.mf-poster-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 0 !important;
+}
+
+.mf-poster-placeholder {
+    width: 100%;
+    height: 100%;
+    background: #ccc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: #666;
+}
+
+/* ===============================
+   Meta (Title / Subtitle)
+=============================== */
+
+.mf-movie-info {
+    margin-top: 6px;
+    padding: 6px 6px 8px 6px;
+}
+
+.mf-movie-meta {
+    margin-top: 8px;
+    height: 42px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 4px;
+    font-size: 11px;
+    color: #777;
+}
+
+.mf-movie-title {
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #111;
+    font-family: inherit;
+}
+
+.mf-movie-sub {
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.3;
+    color: #777;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: inherit;
+}
+
+/* ===============================
+   Badges / Reason
+=============================== */
+
+.mf-badge-popular {
+    background: #f5f5f5;
+    border-radius: 4px;
+    padding: 1px 4px;
+    font-size: 10px;
+    color: #555;
+}
+
+.mf-reason {
+    color: #999;
+}
+
+/* ======================================================
+   SUMMARY CARD (Dashboard v1.2)
+====================================================== */
+
+.mf-card-title {
+    font-size: 13px;
+    color: #6b7280;
+    margin-bottom: 6px;
+}
+
+.mf-card-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #111827;
+    line-height: 1.2;
+}
+
+.mf-card-subtext {
+    font-size: 12px;
+    color: #9ca3af;
+    margin-top: 6px;
+}
+
+/* ======================================================
+   HERO – BASE STRUCTURE (SINGLE SOURCE OF TRUTH)
+====================================================== */
+.mf-hero {
+    position: relative;
+}
+.mf-hero-main {
+    padding-top: 4px;
+    padding-bottom: 8px;
+}
+.mf-hero-inner {
+    position: relative;
+    margin-left: 0;
+}
+/* ======================================================
+   HERO TEXT BLOCK
+====================================================== */
+.mf-hero-text {
+    position: relative;
+    max-width: 720px;
+    padding-right: 180px;     /* 이미지 프리뷰 공간 확보 */
+    margin-bottom: 32px;      /* HERO ↔ GRID 여백 */
+}
+/* Eyebrow (고정 높이, 점프 방지) */
+.mf-hero-eyebrow {
+    font-size: 13px;
+    font-weight: 500;
+    color: #777;
+    min-height: 20px;
+    line-height: 20px;
+    display: flex;
+    align-items: center;
+    margin-top: 36px;
+    margin-bottom: 8px;
+}
+/* Title */
+.mf-hero-title {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+/* Description (본문) */
+.mf-hero-desc {
+    font-size: 15px;
+    color: #555;
+    line-height: 1.6;
+    margin-bottom: 4px;
+}
+/* Description – muted line */
+.mf-hero-desc-muted {
+    font-size: 14px;
+    color: #888;
+    margin-top: 0;
+    margin-bottom: 46px;
+}
+/* Meta */
+.mf-hero-meta {
+    font-size: 13px;
+    color: #999;
+}
+/* ======================================================
+   HERO TEXT STACK (SEARCH HERO ONLY)
+====================================================== */
+.mf-hero-text-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.mf-hero-text-stack > * {
+    margin: 0;
+}
+/* ======================================================
+   HERO IMAGE PREVIEW (CLIP SEARCH) – FINAL
+====================================================== */
+.mf-hero-image-preview {
+    position: absolute;
+    top: 0px;
+    left: calc(25% + 48px);   /* ✔ 정답 버전 유지 */
+}
+/* Image itself */
+.mf-search-image-preview {
+    width: 120px;
+    height: 160px;
+    object-fit: cover;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+/* ======================================================
+   SORT BUTTON (Single Source of Truth)
+====================================================== */
+.mf-hero-sort-toggle {
+    position: absolute;
+    right: 32px;
+    bottom: 24px;
+    display: flex;
+    gap: 8px;
+}
+.mf-sort-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 6px 14px;
+    min-height: 32px;
+    font-size: 13px;
+    font-weight: 450;
+    letter-spacing: -0.01em;
+    background-color: #f3f4f6;  /* 버튼 배경 */
+    border-radius: 999px;       /* pill 모양 */
+    text-decoration: none;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+/* Hover: 배경만 반응 (텍스트 색은 유지) */
+.mf-sort-btn:hover {
+    background-color: #f9fafb;
+}
+/* Active: 선택됨 */
+.mf-sort-btn.active {
+    background-color: #e5e7eb;
+}
+/* Active underline */
+.mf-sort-btn.active::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -5px;
+    transform: translateX(-50%);
+    width: 14px;
+    height: 1px;
+    border-radius: 1px;
+    background: rgba(17, 24, 39, 0.6);
+}
+/* ======================================================
+   SORT BUTTON — COLOR TUNING VERSION
+====================================================== */
+/* 기본 (선택 안 됨) */
+.mf-hero-sort-toggle .mf-sort-btn {
+    color: #9ca3af;   /* 연한 회색 */
+}
+/* 선택됨 */
+.mf-hero-sort-toggle .mf-sort-btn.active {
+    color: #9ca3af;   /* 연한 회색 */
+}
+
+/* =====================================================
+   Search Controls
+===================================================== */
+.mf-search-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+    margin-top: 16px;
+}
+
+.mf-search-controls .mf-control-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mf-search-controls input,
+.mf-search-controls select,
+.mf-search-controls button {
+    height: 36px;
+    padding: 0 12px;
+    font-size: 14px;
+}
+
+/* ===============================
+   Recommendation Explanation Box
+   (FINAL – full meta width)
+================================ */
+.mf-explanation-box {
+    margin-top: 12px;
+    padding: 14px 16px;
+    background: #f3f3f3;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #333;
+
+    /* 🔑 핵심 수정 */
+    width: 100%;
+    box-sizing: border-box;
+}
+/* 문단 간격 제어 */
+.mf-explanation-box p {
+    margin: 0;
+}
+.mf-explanation-box p + p {
+    margin-top: 6px;
+}
+
+/* =========================
+   Pagination (Search)
+========================= */
+.mf-pagination {
+  margin-top: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  font-size: 14px;
+}
+
+.mf-page-btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: #f2f2f2;
+  color: #333;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background 0.15s ease;
+}
+
+.mf-page-btn:hover {
+  background: #e0e0e0;
+}
+
+.mf-page-info {
+  color: #666;
+  font-size: 13px;
+}
+
+/* ======================================================
+   DASHBOARD — SINGLE SOURCE OF TRUTH
+   v1.2 (Core) + v1.3 (Analysis) + v1.5 (Polish)
+   Scope: Dashboard ONLY
+====================================================== */
+
+/* ======================================================
+   Page & Layout
+====================================================== */
+
+.mf-dashboard-page {
+    display: flex;
+    flex-direction: column;
+    gap: 48px;
+
+    /* dashboard-local variables (avoid :root pollution) */
+    --dashboard-left-gap: 32px;
+    --dashboard-right-gap: 64px;
+}
+
+.mf-dashboard-container {
+    width: 100%;
+    margin: 0;
+    padding-left: var(--dashboard-left-gap);
+    padding-right: var(--dashboard-right-gap);
+    box-sizing: border-box;
+}
+
+/* ======================================================
+   Section (SINGLE SOURCE)
+====================================================== */
+
+.mf-dashboard-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 64px;
+}
+
+.mf-dashboard-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #111;
+}
+
+.mf-dashboard-subtitle {
+    font-size: 16px;
+    font-weight: 600;
+    color: #222;
+}
+
+/* ======================================================
+   Cards
+====================================================== */
+
+.mf-dashboard-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px;
+}
+
+.mf-dashboard-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px;
+}
+
+/* ======================================================
+   Charts (Release Year / Analysis)
+====================================================== */
+
+.mf-dashboard-chart-container {
+    position: relative;
+    width: 100%;
+    height: 420px;          /* fixed height */
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.mf-dashboard-chart-container canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* ======================================================
+   Analysis (v1.3)
+====================================================== */
+
+.mf-dashboard-analysis {
+    margin-top: 32px;
+}
+
+.mf-analysis-grid,
+.mf-dashboard-analysis-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-top: 16px;
+}
+
+.mf-analysis-box {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.mf-analysis-desc {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 12px;
+}
+
+.mf-analysis-chart-box {
+    position: relative;
+    height: 260px;
+}
+
+/* Responsive (Analysis) */
+@media (max-width: 1024px) {
+    .mf-analysis-grid,
+    .mf-dashboard-analysis-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ======================================================
+   Inputs & Controls (Dashboard Search / Filters)
+====================================================== */
+
+.mf-dashboard-inputs {
+    margin-top: 48px;
+}
+
+.mf-dashboard-input-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-top: 20px;
+}
+
+.mf-input-box {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 16px 18px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.mf-input-label {
+    font-size: 14px;
+    font-weight: 700;
+    color: #222;
+}
+
+.mf-input {
+    height: 36px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+    font-size: 13px;
+}
+
+.mf-input-btn {
+    align-self: flex-start;
+    height: 34px;
+    padding: 0 14px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    background: #f6f7f9;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.mf-input-btn:hover {
+    background: #eceef1;
+}
+
+/* helper text */
+.mf-dashboard-inputs p,
+.mf-dashboard-inputs small {
+    font-size: 12px;
+    color: #777;
+    margin: 0;
+}
+
+/* Responsive (Inputs) */
+@media (max-width: 960px) {
+    .mf-dashboard-input-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ======================================================
+   Dataset Overview
+====================================================== */
+
+.mf-dashboard-overview {
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.mf-dashboard-overview .mf-dashboard-cards {
+    width: 100%;
+    padding-left: 24px;
+    padding-right: 24px;
+    box-sizing: border-box;
+}
+
+/* ======================================================
+   Explanation / LLM (v1.4)
+====================================================== */
+
+.mf-explanation-inline {
+    margin: 18px 0;
+}
+
+.mf-dashboard-page #btn-explain {
+    background: none;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 13px;
+    color: #555;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.mf-dashboard-page #btn-explain:hover {
+    background-color: #f5f5f5;
+    border-color: #ccc;
+    color: #333;
+}
+
+.mf-explanation-box {
+    margin-top: 12px;
+    padding: 14px 18px;
+    background-color: #fafafa;
+    border-radius: 6px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #444;
+}
+
+/* 기본: 비어 있으면 숨김 (기존 유지) */
+.mf-explanation-box:empty {
+    display: none;
+}
+
+/* JS가 열 때 강제 표시 */
+.mf-explanation-box.is-visible {
+    display: block;
+}
+
+.dashboard-llm-sample {
+    margin-top: 12px;
+    padding: 14px 16px;
+    background-color: #fafafa;
+    border-radius: 6px;
+}
+
+.dashboard-llm-text {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #444;
+}
+
+.dashboard-llm-note {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #888;
+}
+
+/* ======================================================
+   Dashboard Links
+====================================================== */
+
+.mf-dashboard-about-links {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 24px;
+}
+
+.mf-dashboard-about-link,
+.mf-dashboard-link {
+    font-size: 0.9rem;
+    color: #9aa0a6;
+    text-decoration: none;
+}
+
+.mf-dashboard-about-link:hover,
+.mf-dashboard-link:hover {
+    text-decoration: underline;
+}
+
+.mf-dashboard-link-primary {
+    color: #4da3ff;
+    font-weight: 600;
+}
+
+/* =====================================================
+   ENGINE COMPARISON — SINGLE SOURCE OF TRUTH
+   Scope: Dashboard / Engine Panels ONLY
+===================================================== */
+
+/* =====================================================
+   Engine Grid (2×2)
+===================================================== */
+
+.mf-engine-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 28px;              /* 최종 기준 */
+    margin-top: 24px;
+}
+
+/* Mobile */
+@media (max-width: 900px) {
+    .mf-engine-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* =====================================================
+   Engine Panel
+===================================================== */
+
+.mf-engine-panel {
+    display: flex;
+    flex-direction: column;
+
+    min-height: 320px;
+    padding: 20px 22px;
+
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+}
+
+/* =====================================================
+   Engine Header
+===================================================== */
+
+.mf-engine-header {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    margin-bottom: 6px;
+}
+
+.mf-engine-desc {
+    font-size: 13px;
+    line-height: 1.5;
+    color: #666;
+    margin-bottom: 12px;
+}
+
+.mf-engine-status {
+    font-size: 13px;
+    color: #444;
+    background: #f6f7f9;
+    padding: 6px 10px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+}
+
+/* =====================================================
+   Engine Results
+===================================================== */
+
+.mf-engine-results {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+}
+
+/* Result Item */
+.mf-engine-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    padding: 8px 10px;
+    border-radius: 6px;
+
+    background: #fafafa;
+    border: 1px solid #f1f5f9;
+
+    font-size: 13px;
+}
+
+/* Title */
+.mf-engine-item-title {
+    font-weight: 600;
+    color: #222;
+
+    max-width: 70%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Score */
+.mf-engine-item-score {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    color: #555;
+}
+
+/* =====================================================
+   Empty / Error State
+===================================================== */
+
+.mf-empty {
+    margin-top: 24px;
+    padding: 12px 0;
+
+    font-size: 13px;
+    color: #999;
+    text-align: center;
+}
+
+/* ======================================================
+   DETAIL — Movie Detail Page (FINAL, SAFE)
+====================================================== */
+
+/* ===============================
+   Movie Detail Top (Title / Overview)
+=============================== */
+
+.movie-detail-top {
+    display: grid;
+    grid-template-columns: 380px 1fr 260px;
+    gap: 32px;
+}
+
+.movie-detail-title {
+    font-size: 26px;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.movie-overview {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #333;
+}
+
+/* ===============================
+   Movie Detail Grid — 3 Columns (FINAL)
+   POSTER / META / TRAILER
+=============================== */
+
+.movie-detail-grid {
+    display: grid;
+    grid-template-columns:
+        300px                 /* Poster */
+        minmax(420px, 1fr)    /* Meta */
+        240px;                /* Trailer */
+    column-gap: 24px;
+    align-items: start;
+    margin-top: 28px;
+}
+
+/* ===============================
+   Poster
+=============================== */
+
+.movie-col-poster img {
+    width: 300px;
+    height: 450px;
+    object-fit: cover;
+    border-radius: 12px;
+}
+
+/* ===============================
+   Explanation (LLM / Summary)
+=============================== */
+
+.mf-explanation-box {
+    margin-top: 12px;
+    max-width: 100%;
+    width: auto;
+}
+
+/* ===============================
+   Trailer Column
+=============================== */
+
+.movie-col-trailer {
+    margin-top: -54px;
+}
+
+
+/* =========================================
+   Detail – Explain Button (RESTORE)
+========================================= */
+#btn-explain {
+    background: none;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    padding: 6px 14px;
+
+    font-size: 13px;
+    color: #555;
+
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#btn-explain:hover {
+    background-color: #f5f5f5;
+    border-color: #ccc;
+    color: #333;
+}
+
+/* ======================================================
+   TRAILER (YouTube – Tone Down + Hover Restore)
+====================================================== */
+.yt-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+.yt-link {
+    text-decoration: none;
+    color: inherit;
+}
+.yt-thumb-fixed {
+    width: 214px;
+    height: 120px;
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: #eaeaea;
+}
+.yt-thumb-fixed img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: brightness(0.7) saturate(0.85);
+    transition: filter 0.2s ease;
+}
+.yt-link:hover .yt-thumb-fixed img {
+    filter: none;
+}
+.yt-title {
+    margin-top: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #666;
+    transition: color 0.2s ease;
+}
+.yt-link:hover .yt-title {
+    color: #111;
+}
+.yt-meta {
+    font-size: 12px;
+    color: #777;
+}
+
+/* Engine Comparison: 3-column fixed grid */
+.mf-engine-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  align-items: stretch;
+}
+
+.mf-dashboard-chart-container {
+  position: relative;
+  width: 100%;
+  height: 360px;   /* 🔴 이 한 줄이 핵심 */
+}
+
+/* Search Controls: Text / Image 50:50 */
+.mf-dashboard-input-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  align-items: stretch;
+}
+
+

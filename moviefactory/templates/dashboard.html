@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="mf-dashboard-page">
+  <div class="mf-dashboard-container">
+
+    <!-- ===============================
+         PAGE HEADER
+    ================================ -->
+    <a href="/dashboard/about" class="mf-dashboard-about-link">
+      About / Architecture
+    </a>
+
+    <!-- ===============================
+         DATASET OVERVIEW
+    ================================ -->
+    <section class="mf-dashboard-section mf-dashboard-overview">
+      <h2 class="mf-dashboard-title">Dataset Overview</h2>
+
+      <div class="mf-dashboard-cards">
+        <div class="mf-dashboard-card">
+          <div class="mf-card-title">Total Movies</div>
+          <div class="mf-card-value" id="total-movies">–</div>
+          <div class="mf-card-subtext">Cleaned dataset</div>
+        </div>
+
+        <div class="mf-dashboard-card">
+          <div class="mf-card-title">Average Rating</div>
+          <div class="mf-card-value" id="avg-rating">–</div>
+          <div class="mf-card-subtext">vote_average</div>
+        </div>
+
+        <div class="mf-dashboard-card">
+          <div class="mf-card-title">Average Popularity</div>
+          <div class="mf-card-value" id="avg-popularity">–</div>
+          <div class="mf-card-subtext">popularity</div>
+        </div>
+
+        <div class="mf-dashboard-card">
+          <div class="mf-card-title">Top 20% Rating</div>
+          <div class="mf-card-value" id="top20-rating">–</div>
+          <div class="mf-card-subtext">high-quality subset</div>
+        </div>
+
+        <div class="mf-dashboard-card">
+          <div class="mf-card-title">Recent 10 Years</div>
+          <div class="mf-card-value" id="recent-ratio">–%</div>
+          <div class="mf-card-subtext">release_year</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===============================
+         SEARCH CONTROLS
+    ================================ -->
+    <section class="mf-dashboard-section mf-dashboard-inputs">
+      <h2 class="mf-dashboard-title">Search Controls</h2>
+
+      <div class="mf-dashboard-input-grid">
+
+        <!-- TEXT QUERY -->
+        <div class="mf-input-box">
+          <label class="mf-input-label">Text Query</label>
+          <input
+            type="text"
+            id="text-query-input"
+            class="mf-input"
+            placeholder="Keywords or sentence (TF-IDF / SBERT)"
+          >
+          <button class="mf-input-btn" id="text-search-btn">
+            Search Text
+          </button>
+          <div class="mf-input-desc">
+            Activates TF-IDF &amp; SBERT engines
+          </div>
+        </div>
+
+        <!-- IMAGE QUERY -->
+        <div class="mf-input-box">
+          <label class="mf-input-label">Image Query</label>
+          <input
+            type="file"
+            id="image-query-input"
+            class="mf-input"
+            accept="image/*"
+          >
+          <button class="mf-input-btn" id="image-search-btn">
+            Search Image
+          </button>
+          <div class="mf-input-desc">
+            Activates CLIP engine only
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ===============================
+         ENGINE COMPARISON (PARALLEL)
+    ================================ -->
+    <section class="mf-dashboard-section mf-dashboard-engines">
+      <h2 class="mf-dashboard-title">Engine Comparison</h2>
+
+      <div class="mf-engine-grid mf-engine-grid-3">
+
+        <!-- TF-IDF -->
+        <div class="mf-engine-panel" id="panel-tfidf">
+          <div class="mf-engine-header">
+            TF-IDF <span class="mf-engine-tag">Text</span>
+          </div>
+          <div class="mf-engine-status">
+            Waiting for text query
+          </div>
+          <div class="mf-engine-results"></div>
+        </div>
+
+        <!-- SBERT -->
+        <div class="mf-engine-panel" id="panel-sbert">
+          <div class="mf-engine-header">
+            SBERT <span class="mf-engine-tag">Text</span>
+          </div>
+          <div class="mf-engine-status">
+            Waiting for text query
+          </div>
+          <div class="mf-engine-results"></div>
+        </div>
+
+        <!-- CLIP -->
+        <div class="mf-engine-panel" id="panel-clip">
+          <div class="mf-engine-header">
+            CLIP <span class="mf-engine-tag">Image</span>
+          </div>
+          <div class="mf-engine-status">
+            Waiting for image query
+          </div>
+          <div class="mf-engine-results"></div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ===============================
+         CF-SVD NOTE
+    ================================ -->
+    <section class="mf-dashboard-section mf-dashboard-note">
+      <h3 class="mf-dashboard-subtitle">CF-SVD (Collaborative Filtering)</h3>
+      <div class="mf-dashboard-note-box">
+        CF-SVD is designed for <strong>user-interaction based recommendation</strong>.
+        <br>
+        It is not query-driven and is therefore excluded from direct engine comparison.
+        <br>
+        <em>(Recommended: demonstrate CF-SVD in personalized recommendation scenarios)</em>
+      </div>
+    </section>
+
+    <!-- ===============================
+         RELEASE YEAR DISTRIBUTION
+    ================================ -->
+    <section class="mf-dashboard-section">
+      <h2 class="mf-dashboard-title">Release Year Distribution</h2>
+      <div class="mf-dashboard-chart-container">
+        <canvas id="yearChart"></canvas>
+      </div>
+    </section>
+
+    <!-- ===============================
+         RECOMMENDATION ANALYSIS
+    ================================ -->
+    <section class="mf-dashboard-section mf-dashboard-analysis">
+      <h2 class="mf-dashboard-title">Recommendation Analysis</h2>
+
+      <div class="mf-dashboard-analysis-grid">
+
+        <div class="mf-dashboard-analysis-panel">
+          <div class="mf-analysis-title">Engine Contribution</div>
+          <div class="mf-dashboard-chart-container">
+            <canvas id="engineContributionChart"></canvas>
+          </div>
+        </div>
+
+        <div class="mf-dashboard-analysis-panel">
+          <div class="mf-analysis-title">Ranker ON vs OFF</div>
+          <div class="mf-dashboard-chart-container">
+            <canvas id="rankerComparisonChart"></canvas>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+
+{% endblock %}

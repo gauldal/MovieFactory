@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- ===============================
+   MOVIE DETAIL PAGE WRAPPER
+   (content padding 영향 제거용)
+================================ -->
+<div class="movie-detail-page">
+
+  <!-- ===============================
+     INNER GRID (A / B 제어 영역)
+  ================================= -->
+  <div class="movie-detail-grid">
+
+    <!-- POSTER -->
+    <section class="movie-col movie-col-poster">
+      {% if movie.poster_url %}
+        <img src="{{ movie.poster_url }}" alt="{{ movie.title }}">
+      {% else %}
+        <div class="mf-poster-placeholder">No Image</div>
+      {% endif %}
+    </section>
+
+    <!-- META -->
+    <section class="movie-col movie-col-meta">
+      <h1 class="movie-detail-title">{{ movie.title }}</h1>
+
+      {% if movie.original_title and movie.original_title != movie.title %}
+        <p class="movie-original-title">{{ movie.original_title }}</p>
+      {% endif %}
+
+      {% if movie.tagline %}
+        <p class="movie-tagline">“{{ movie.tagline }}”</p>
+      {% endif %}
+
+      <p class="movie-overview">{{ movie.overview }}</p>
+
+      <!-- 추천 설명 -->
+      <div class="mf-explanation-inline">
+        <button
+          id="btn-explain"
+          data-movie-id="{{ movie.movie_id }}"
+          data-title="{{ movie.title }}"
+          data-genres="{{ movie.genres_display }}"
+          data-year="{{ movie.release_year }}"
+        >
+          이 추천에 대한 간단한 설명
+        </button>
+
+        <div id="explanation-result" class="mf-explanation-box"></div>
+      </div>
+
+      <div class="movie-meta-list">
+        {% if movie.genres_display %}
+          <p><strong>장르</strong> {{ movie.genres_display }}</p>
+        {% endif %}
+        {% if movie.release_year %}
+          <p><strong>개봉</strong> {{ movie.release_year }}</p>
+        {% endif %}
+        {% if movie.runtime_display %}
+          <p><strong>러닝타임</strong> {{ movie.runtime_display }}</p>
+        {% endif %}
+        {% if movie.rating_display %}
+          <p>
+            <strong>평점</strong> {{ movie.rating_display }}
+            {% if movie.vote_count_display %}
+              ({{ movie.vote_count_display }})
+            {% endif %}
+          </p>
+        {% endif %}
+      </div>
+    </section>
+
+    <!-- TRAILER -->
+    <aside class="movie-col movie-col-trailer">
+      <h3>Trailers</h3>
+      <ul class="yt-list">
+        {% for t in trailers %}
+        <li>
+          <a class="yt-link" href="{{ t.url }}" target="_blank">
+            <div class="yt-thumb-fixed">
+              <img src="{{ t.thumbnail }}" alt="{{ t.title }}">
+            </div>
+            <div class="yt-title">{{ t.title }}</div>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    </aside>
+
+  </div>
+</div>
+
+<!-- ===============================
+   SIMILAR MOVIES
+================================ -->
+<div class="section similar-movies">
+  <h2 class="section-title">Similar Movies</h2>
+
+  <div class="mf-movie-grid">
+    {% for movie in similar_movies[:14] %}
+    <div class="mf-movie-card">
+      <a href="{{ url_for('movie_detail', movie_id=movie['movie_id']) }}">
+        <div class="mf-poster-wrapper">
+          {% if movie.poster_url %}
+            <img src="{{ movie.poster_url }}" alt="{{ movie.title }}">
+          {% else %}
+            <div class="mf-poster-placeholder">No Image</div>
+          {% endif %}
+        </div>
+        <div class="mf-movie-info">
+          <div class="mf-movie-title">{{ movie.title }}</div>
+          <div class="mf-movie-sub">⭐ {{ movie.vote_average }}</div>
+        </div>
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/explain.js') }}"></script>
+{% endblock %}

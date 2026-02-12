@@ -1,0 +1,20 @@
+# MovieFactory Engine Requirements
+#
+# 이 파일은 "계산 전용 Engine Layer"를 위한 의존성만 포함한다.
+# - 모델 추론
+# - 벡터 계산
+# - 유사도 연산
+#
+# ❌ Web / API / UI / Dashboard 의존성 포함 금지
+# ❌ 실행 환경(Docker) 제어 목적 아님
+#
+# 이 의존성 집합은 오직 Engine 계산 재현성을 보장하기 위해 존재한다.
+
+numpy
+pandas
+scikit-learn
+sentence-transformers
+torch
+faiss-cpu
+open_clip_torch
+pillow

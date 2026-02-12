@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>MovieFactory</title>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/content.css') }}">
+</head>
+
+<body>
+
+<!-- CLIP MODAL TOGGLE -->
+<input type="checkbox" id="clip-toggle" hidden>
+
+<!-- ================= HEADER ================= -->
+<header class="top-header">
+  <div class="header-grid">
+
+    <!-- LEFT -->
+    <div class="header-left">
+      <a href="/" class="logo">MovieFactory</a>
+    </div>
+
+    <!-- CENTER -->
+    <div class="header-center">
+
+      <!-- GENRE NAV -->
+      <nav class="genre-tabs">
+        {% for g in ["Action","Adventure","Animation","Comedy","Crime","Drama","Fantasy","Horror","Romance","SF","Thriller","War"] %}
+          <a href="/search?genre={{ g }}">{{ g }}</a>
+        {% endfor %}
+      </nav>
+
+      <!-- SEARCH ROW (UX 기준 발췌) -->
+      <div class="search-row">
+        <form class="search-form" method="get" action="/search">
+          <input
+            type="text"
+            name="q"
+            class="search-input"
+            placeholder="Search for movies..."
+            value="{{ query if query }}"
+          >
+        </form>
+
+        <label for="clip-toggle" class="photo-btn">Photo</label>
+      </div>
+
+    </div>
+
+    <!-- RIGHT -->
+    <div class="header-right">
+      <span class="logout">Logout</span>
+      <span class="bell">🔔</span>
+    </div>
+
+  </div>
+</header>
+
+<!-- ================= IMAGE SEARCH MODAL ================= -->
+<div class="clip-modal">
+  <div class="clip-modal-content">
+
+    <div class="clip-modal-header">Image Search</div>
+
+    <form method="post" action="/search" enctype="multipart/form-data">
+      <input type="file" name="image" accept="image/*" required>
+
+      <div class="clip-modal-actions">
+        <label for="clip-toggle" class="clip-btn cancel">Cancel</label>
+        <button type="submit" class="clip-btn search">Search</button>
+      </div>
+    </form>
+
+  </div>
+</div>
+
+<!-- ================= MAIN GRID ================= -->
+<div class="page-grid">
+
+  <!-- LEFT -->
+  <aside class="left-sidebar">
+    <h3>Genres</h3>
+    <ul class="genre-list">
+      {% for g in ["Action","Adventure","Animation","Comedy","Crime","Drama","Fantasy","Horror","Romance","SF","Thriller","War"] %}
+        <li><a href="/search?genre={{ g }}">{{ g }}</a></li>
+      {% endfor %}
+    </ul>
+  </aside>
+
+  <!-- CENTER -->
+  <main class="main-content">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- RIGHT -->
+  <aside class="right-sidebar">
+    <h3>My Menu</h3>
+    <ul class="right-menu">
+      <li><a href="#" class="right-menu-btn">My Profile</a></li>
+      <li><a href="#" class="right-menu-btn">Recently Viewed</a></li>
+      <li><a href="#" class="right-menu-btn">Favorites</a></li>
+      <li><a href="#" class="right-menu-btn">My Ratings</a></li>
+      <li><a href="#" class="right-menu-btn">Recommendations</a></li>
+      <li><a href="#" class="right-menu-btn">My Reviews</a></li>
+      <li><a href="#" class="right-menu-btn">Blocked Movies</a></li>
+    </ul>
+  </aside>
+
+</div>
+
+<!-- ================= FOOTER ================= -->
+<div class="mf-bottom-bar">
+  <div class="mf-bottom-inner">
+    <div class="mf-bottom-left">
+      <span class="mf-bottom-label">정렬:</span>
+      <span class="mf-bottom-value">
+        {% if sort == "popular" %}
+          인기순
+        {% else %}
+          최신순
+        {% endif %}
+      </span>
+    </div>
+
+    <div class="mf-bottom-right">
+      <a href="#top" class="mf-bottom-btn">Top</a>
+      <a href="/dashboard" class="mf-bottom-link">Dashboard</a>
+    </div>
+  </div>
+</div>
+
+<footer class="footer-dashboard">
+  <div class="footer-inner">
+    <span class="footer-brand">MovieFactory</span>
+    <span class="footer-sep">·</span>
+    <span class="footer-desc">AI-powered Movie Discovery Platform</span>
+    <span class="footer-sep">·</span>
+    <span>© 2025 MovieFactory</span>
+    <span class="footer-sep">·</span>
+    <a href="/dashboard" class="footer-link">Analysis Dashboard</a>
+  </div>
+</footer>
+
+</body>
+</html>
+

@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- =========================
+     HERO (HOME)
+========================= -->
+<section class="mf-hero">
+  <div class="mf-hero-inner">
+
+    <!-- LEFT: HERO TEXT -->
+    <div class="mf-hero-text">
+      <div class="mf-hero-text-stack">
+
+        <p class="mf-hero-eyebrow">
+          지금 가장 많은 사람들이 보고 있는 영화
+        </p>
+
+        <h1 class="mf-hero-title">
+          Popular Movies
+        </h1>
+
+        <p class="mf-hero-desc">
+          오늘 MovieFactory에서 가장 많이 탐색된 영화 모음
+        </p>
+
+        <p class="mf-hero-desc-muted">
+          실시간 조회·평점·반응 데이터를 기준으로 선정되었습니다
+        </p>
+
+      </div>
+    </div>
+
+    <!-- SORT TOGGLE (HOME – SEARCH LIST와 동일 구조) -->
+    <div class="mf-hero-sort-toggle">
+      <a
+        href="{{ url_for('index', sort='latest') }}"
+        class="mf-sort-btn {% if sort == 'latest' %}active{% endif %}"
+      >
+        최신순
+      </a>
+      <a
+        href="{{ url_for('index', sort='popular') }}"
+        class="mf-sort-btn {% if sort != 'latest' %}active{% endif %}"
+      >
+        인기순
+      </a>
+    </div>
+
+  </div>
+</section>
+
+<!-- =========================
+     MOVIE GRID
+========================= -->
+<div class="section">
+  <div class="mf-movie-grid">
+    {% for movie in movies %}
+    <div class="mf-movie-card">
+      <a href="{{ url_for('movie_detail', movie_id=movie.movie_id) }}">
+
+        <div class="mf-poster-wrapper">
+          {% if movie.poster_url %}
+          <img src="{{ movie.poster_url }}" alt="{{ movie.title }}">
+          {% else %}
+          <div class="mf-poster-placeholder">No Image</div>
+          {% endif %}
+        </div>
+
+        <div class="mf-movie-info">
+          <div class="mf-movie-title">{{ movie.title }}</div>
+          <div class="mf-movie-sub">⭐ {{ movie.vote_average }}</div>
+        </div>
+
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+{% endblock %}

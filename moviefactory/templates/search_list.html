@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- =========================
+     HERO (SEARCH RESULT)
+========================= -->
+<section class="mf-hero">
+  <div class="mf-hero-inner">
+
+    <!-- LEFT: TEXT -->
+    <div class="mf-hero-text">
+      <div class="mf-hero-text-stack">
+
+        <p class="mf-hero-eyebrow">
+          영화를 다양한 방식으로 탐색해 보세요
+        </p>
+
+        <h1 class="mf-hero-title">
+          {% if image_mode %}
+            Image Search Results
+          {% elif genre %}
+            {{ genre }} Movies
+          {% elif q %}
+            "{{ q }}" 검색 결과
+          {% else %}
+            Search Results
+          {% endif %}
+        </h1>
+
+        <p class="mf-hero-desc">
+          {% if image_mode %}
+            업로드한 이미지와 유사한 영화 검색 결과입니다
+          {% elif genre %}
+            선택한 장르에 해당하는 영화 목록입니다
+          {% elif q %}
+            입력한 키워드와 연관된 영화 검색 결과입니다
+          {% endif %}
+        </p>
+
+        <p class="mf-hero-desc-muted">
+          총 {{ total_count }}개의 영화가 검색되었습니다
+        </p>
+
+      </div>
+    </div>
+
+    <!-- RIGHT: IMAGE SEARCH PREVIEW (RESULT ONLY) -->
+    {% if image_mode and search_image_preview %}
+    <div class="mf-hero-image-preview">
+      <img
+        src="{{ search_image_preview }}"
+        alt="Search Image Preview"
+        class="mf-search-image-preview"
+      >
+    </div>
+    {% endif %}
+
+    <!-- SORT TOGGLE -->
+    <div class="mf-hero-sort-toggle">
+      <a
+        href="{{ url_for('search.search', q=q, genre=genre, sort='latest', page=1) }}"
+        class="mf-sort-btn {% if sort == 'latest' %}active{% endif %}"
+      >
+        최신순
+      </a>
+      <a
+        href="{{ url_for('search.search', q=q, genre=genre, sort='popular', page=1) }}"
+        class="mf-sort-btn {% if sort != 'latest' %}active{% endif %}"
+      >
+        인기순
+      </a>
+    </div>
+
+  </div>
+</section>
+
+<!-- =========================
+     MOVIE GRID
+========================= -->
+<div class="section">
+  <div class="mf-movie-grid">
+
+    {% for movie in movies %}
+    <div class="mf-movie-card">
+      <a href="{{ url_for('movie_detail', movie_id=movie.movie_id) }}">
+
+        <div class="mf-poster-wrapper">
+          {% if movie.poster_url %}
+            <img src="{{ movie.poster_url }}" alt="{{ movie.title }}">
+          {% else %}
+            <div class="mf-poster-placeholder">No Image</div>
+          {% endif %}
+        </div>
+
+        <div class="mf-movie-info">
+          <div
+            class="mf-movie-title"
+            title="{{ movie.title }}"
+          >
+            {{ movie.title }}
+          </div>
+          <div class="mf-movie-sub">
+            ⭐ {{ movie.vote_average }}
+          </div>
+        </div>
+
+      </a>
+    </div>
+    {% endfor %}
+
+  </div>
+</div>
+
+<!-- =========================
+     PAGINATION
+========================= -->
+{% if total_pages > 1 %}
+<div class="mf-pagination">
+
+  {% if page > 1 %}
+  <a
+    href="{{ url_for('search.search', q=q, genre=genre, sort=sort, page=page-1) }}"
+    class="mf-page-btn"
+  >이전</a>
+  {% endif %}
+
+  <span class="mf-page-info">
+    {{ page }} / {{ total_pages }}
+  </span>
+
+  {% if page < total_pages %}
+  <a
+    href="{{ url_for('search.search', q=q, genre=genre, sort=sort, page=page+1) }}"
+    class="mf-page-btn"
+  >다음</a>
+  {% endif %}
+
+</div>
+{% endif %}
+
+{% endblock %}

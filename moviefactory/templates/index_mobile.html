@@ -1,0 +1,40 @@
+{% extends "base_mobile.html" %}
+
+{% block content %}
+
+<!-- =========================
+     POPULAR MOVIES
+========================= -->
+<section class="m-section">
+  <h2>Popular Movies</h2>
+  <p class="m-desc">
+    오늘 MovieFactory에서 가장 많이 탐색된 영화
+  </p>
+
+  <div class="m-movie-grid">
+    {% for movie in movies %}
+      <a
+        href="/movie/{{ movie.movie_id }}"
+        class="m-movie-card"
+      >
+        <img
+          src="{{ movie.poster_url }}"
+          alt="{{ movie.title }}"
+          loading="lazy"
+        >
+
+        <div class="m-movie-title">
+          {{ movie.title }}
+        </div>
+
+        {% if movie.vote_average %}
+        <div class="m-movie-rating">
+          ⭐ {{ "%.1f"|format(movie.vote_average) }}
+        </div>
+        {% endif %}
+      </a>
+    {% endfor %}
+  </div>
+</section>
+
+{% endblock %}

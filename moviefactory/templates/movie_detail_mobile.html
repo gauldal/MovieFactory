@@ -1,0 +1,109 @@
+{% extends "base_mobile.html" %}
+
+{% block content %}
+
+<!-- =========================
+     POSTER HERO
+========================= -->
+<section class="md-hero">
+  <img
+    class="md-poster"
+    src="{{ movie.poster_url }}"
+    alt="{{ movie.title }}"
+  >
+</section>
+
+<!-- =========================
+     PRIMARY META
+========================= -->
+<section class="md-meta">
+  <h1 class="md-title">{{ movie.title }}</h1>
+
+  <div class="md-sub">
+    {% if movie.release_year %}
+      <p><strong>개봉</strong> {{ movie.release_year }}</p>
+    {% endif %}
+
+    {% if movie.genres_display %}
+      <p><strong>장르</strong> {{ movie.genres_display }}</p>
+    {% endif %}
+
+    {% if movie.runtime_display %}
+      <p><strong>러닝타임</strong> {{ movie.runtime_display }}</p>
+    {% endif %}
+  </div>
+
+  {% if movie.rating_display %}
+  <div class="md-rating">
+    <p>
+      <strong>평점</strong> {{ movie.rating_display }}
+      {% if movie.vote_count_display %}
+        <span class="md-vote-count">({{ movie.vote_count_display }})</span>
+      {% endif %}
+    </p>
+  </div>
+  {% endif %}
+</section>
+
+
+
+<!-- =========================
+     ACTIONS
+========================= -->
+<section class="md-actions">
+  <button class="md-btn">＋ Watchlist</button>
+</section>
+
+<!-- =========================
+     OVERVIEW
+========================= -->
+{% if movie.overview %}
+<section class="md-overview">
+  <h2>Overview</h2>
+  <p>{{ movie.overview }}</p>
+</section>
+{% endif %}
+
+<!-- =========================
+     TRAILERS
+========================= -->
+{% if trailers %}
+<section class="md-trailers">
+  <h2>Trailers</h2>
+  <div class="md-trailer-list">
+    {% for t in trailers %}
+    <a
+      class="md-trailer-card"
+      href="{{ t.url }}"
+      target="_blank"
+      rel="noopener"
+    >
+      <img src="{{ t.thumbnail }}" alt="Trailer thumbnail">
+      <span>Play</span>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<!-- =========================
+     SIMILAR MOVIES
+========================= -->
+{% if similar_movies %}
+<section class="md-similar">
+  <h2>Similar Movies</h2>
+  <div class="md-similar-row">
+    {% for m in similar_movies %}
+    <a href="/movie/{{ m.movie_id }}" class="md-similar-card">
+      <img
+        src="{{ m.poster_url }}"
+        alt="{{ m.title }}"
+        loading="lazy"
+      >
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% endblock %}

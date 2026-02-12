@@ -1,0 +1,571 @@
+/* =========================
+   GLOBAL LINK RESET (CRITICAL)
+========================= */
+a,
+a:link,
+a:visited,
+a:hover,
+a:active {
+  color: inherit !important;
+  text-decoration: none !important;
+}
+
+a:focus,
+a:focus-visible {
+  outline: none !important;
+}
+
+/* =========================
+   MOBILE TAP HIGHLIGHT OFF
+========================= */
+button,
+a,
+input,
+textarea {
+  -webkit-tap-highlight-color: rgba(0,0,0,0);
+}
+
+/* =========================
+   RESET
+========================= */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #ffffff;
+  color: #111;
+  padding-bottom: 56px;
+}
+
+/* =========================
+   HEADER
+========================= */
+.m-header {
+  position: sticky;
+  top: 0;
+  height: 56px;
+  background: #fff;
+  border-bottom: 1px solid #eee;
+  z-index: 100;
+}
+
+.m-header-inner {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+}
+
+.m-menu-btn {
+  font-size: 20px;
+  background: none;
+  border: none;
+}
+
+.m-logo {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.m-icons span {
+  margin-left: 12px;
+  font-size: 18px;
+}
+
+/* =========================
+   MAIN
+========================= */
+.m-main {
+  padding: 16px;
+}
+
+/* =========================
+   SEARCH
+========================= */
+.m-search {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.m-search input {
+  flex: 1;
+  height: 40px;
+  border-radius: 20px;
+  border: 1px solid #ddd;
+  padding: 0 16px;
+}
+
+.m-search button {
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 20px;
+  border: none;
+  background: #111;
+  color: #fff;
+}
+
+/* =========================
+   SECTION
+========================= */
+.m-section h2 {
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+
+.m-desc {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 16px;
+}
+
+/* =========================
+   MOVIE GRID
+========================= */
+.m-movie-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.m-movie-card img {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.m-movie-title {
+  font-size: 14px;
+  margin-top: 6px;
+  font-weight: 500;
+}
+
+.m-movie-rating {
+  font-size: 12px;
+  color: #777;
+}
+
+/* =========================
+   BOTTOM NAV
+========================= */
+.m-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  background: #fff;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+
+.m-bottom-nav a {
+  text-decoration: none;
+  color: #444;
+  font-size: 13px;
+}
+/* =========================
+   SEARCH HERO
+========================= */
+.m-search-hero {
+  margin-bottom: 20px;
+}
+
+.m-search-query h2 {
+  font-size: 18px;
+  margin-bottom: 4px;
+}
+
+.m-search-query p {
+  font-size: 13px;
+  color: #666;
+}
+
+/* IMAGE SEARCH PREVIEW */
+.m-search-image-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.m-search-image-preview img {
+  width: 48px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.m-search-image-preview span {
+  font-size: 13px;
+  color: #444;
+}
+
+/* =========================
+   SEARCH RESULTS
+========================= */
+.m-search-results {
+  margin-bottom: 24px;
+}
+
+.m-movie-meta {
+  margin-top: 6px;
+}
+
+.m-movie-title {
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+.m-movie-rating {
+  font-size: 12px;
+  color: #777;
+}
+
+/* =========================
+   PAGINATION (MOBILE)
+========================= */
+.m-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 24px 0 8px;
+}
+
+
+
+.m-page-info {
+  flex: 1;
+  text-align: center;
+  font-size: 13px;
+  color: #555;
+}
+/* =========================
+   MOVIE DETAIL – HERO
+========================= */
+.md-hero {
+  margin: -16px -16px 12px;
+}
+
+.md-poster {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+}
+
+/* =========================
+   META
+========================= */
+.md-meta {
+  margin-bottom: 16px;
+}
+
+.md-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.md-sub {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 6px;
+}
+
+.md-rating {
+  font-size: 13px;
+  color: #444;
+}
+
+/* =========================
+   ACTIONS
+========================= */
+.md-actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.md-btn {
+  flex: 1;
+  height: 44px;
+  border-radius: 22px;
+  border: 1px solid #ddd;
+  background: #fff;
+  font-size: 14px;
+}
+
+.md-btn.primary {
+  background: #111;
+  color: #fff;
+  border: none;
+}
+
+/* =========================
+   OVERVIEW
+========================= */
+.md-overview h2 {
+  font-size: 16px;
+  margin-bottom: 6px;
+}
+
+.md-overview p {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #333;
+}
+
+/* =========================
+   TRAILERS
+========================= */
+.md-trailers h2 {
+  font-size: 16px;
+  margin: 20px 0 10px;
+}
+
+.md-trailer-list {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+}
+
+.md-trailer-card {
+  position: relative;
+  flex: 0 0 200px;
+}
+
+.md-trailer-card img {
+  width: 100%;
+  border-radius: 10px;
+}
+
+.md-trailer-card span {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 12px;
+}
+
+/* =========================
+   SIMILAR MOVIES
+========================= */
+.md-similar h2 {
+  font-size: 16px;
+  margin: 20px 0 10px;
+}
+
+.md-similar-row {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+}
+
+.md-similar-card {
+  flex: 0 0 120px;
+}
+
+.md-similar-card img {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: 10px;
+}
+/* =========================
+   GENRE MENU – OVERLAY
+========================= */
+.gm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  z-index: 200;
+}
+
+.gm-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* =========================
+   GENRE MENU – PANEL
+========================= */
+.gm-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 260px;
+  height: 100%;
+  background: #fff;
+  transform: translateX(-100%);
+  transition: transform 0.25s ease;
+  z-index: 201;
+  display: flex;
+  flex-direction: column;
+}
+
+.gm-panel.active {
+  transform: translateX(0);
+}
+
+/* =========================
+   PANEL HEADER
+========================= */
+.gm-header {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  border-bottom: 1px solid #eee;
+  font-weight: 600;
+}
+
+.gm-header button {
+  background: none;
+  border: none;
+  font-size: 18px;
+}
+
+/* =========================
+   GENRE LIST
+========================= */
+.gm-list {
+  padding: 8px 0;
+  overflow-y: auto;
+}
+
+.gm-list a {
+  display: block;
+  padding: 14px 20px;
+  text-decoration: none;
+  color: #111;
+  font-size: 15px;
+}
+
+.gm-list a:hover {
+  background: #f5f5f5;
+}
+button:focus {
+  outline: none;
+}
+/* =========================
+   LINK / FOCUS FINAL FIX
+========================= */
+a,
+a:link,
+a:visited,
+a:hover,
+a:active {
+  color: inherit !important;
+  text-decoration: none !important;
+}
+
+a:focus,
+a:focus-visible {
+  outline: none !important;
+}
+
+.m-movie-card,
+.m-movie-card * {
+  text-decoration: none !important;
+  color: inherit !important;
+}
+
+button:focus,
+button:active {
+  outline: none !important;
+  box-shadow: none !important;
+}
+/* =========================
+   MOBILE TAP HIGHLIGHT OFF
+========================= */
+button,
+a,
+input,
+textarea {
+  -webkit-tap-highlight-color: rgba(0,0,0,0);
+}
+/* =========================
+   HAMBURGER CLOSE BUTTON FIX
+========================= */
+.gm-close-btn {
+  font-size: 18px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.gm-close-btn:active {
+  background: none !important;
+}
+/* =========================
+   MOBILE SEARCH SPACING FIX
+========================= */
+
+/* 로고 아래 전체 여백 확보 */
+.m-search-global {
+  margin-top: 24px;      /* 헤더 ↔ 검색폼 */
+  margin-bottom: 10px;   /* 검색폼 ↔ 미리보기 */
+}
+
+/* 이미지 미리보기 위 여백 */
+.m-image-preview {
+  margin-top: 10px;
+}
+
+/* 이미지 미리보기 자체 정렬 유지 */
+.m-image-preview img {
+  display: block;
+  max-width: 100%;
+  border-radius: 8px;
+}
+/* =========================
+   MOBILE PAGINATION FIX
+========================= */
+
+.m-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 20px 0;
+  gap: 12px;
+}
+
+
+
+.m-page-btn:disabled,
+.m-page-btn.disabled {
+  opacity: 0.4;
+}
+
+.m-page-info {
+  flex: 0 0 auto;
+  font-size: 13px;
+  color: #666;
+}
+.m-pagination a,
+.m-pagination button {
+  color: #fff;          /* ← 이 줄 없으면 안 보임 */
+}
+.m-page-btn {
+  background: #fff;
+  color: #111;          /* ← 이거 없음 */
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-weight: 600;
+  text-decoration: none;
+}

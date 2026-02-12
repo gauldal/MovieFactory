@@ -1,0 +1,76 @@
+default_candidate_k: 400
+
+cases:
+
+- id: I001
+  query: "a billionaire vigilante fights crime in a dark city as a chaotic clown criminal pushes him to the limit"
+  must_ids: [155]
+  nice_ids: []
+  tags: ["intent", "superhero", "crime"]
+  candidate_k: 400
+
+- id: I002
+  query: "an italian-american crime family led by a powerful don struggles with succession and loyalty"
+  must_ids: [238]
+  nice_ids: []
+  tags: ["intent", "mafia", "family"]
+  candidate_k: 400
+
+- id: I003
+  query: "a christmas sci-fi comedy where santa is kidnapped and taken to another planet"
+  must_ids: [32307]
+  nice_ids: []
+  tags: ["intent", "sci-fi", "comedy"]
+  candidate_k: 400
+
+# (교체) Payback -> Predator
+- id: I004
+  query: "elite soldiers are hunted in a jungle by an invisible alien warrior using advanced technology"
+  must_ids: [106]
+  nice_ids: []
+  tags: ["intent", "sci-fi", "action"]
+  candidate_k: 400
+
+- id: I005
+  query: "a brutal home-invasion revenge horror where parents retaliate for their daughter's assault"
+  must_ids: [18405]
+  nice_ids: []
+  tags: ["intent", "horror", "revenge"]
+  candidate_k: 700
+
+- id: I006
+  query: "a serial killer thriller set in new york involving a sadistic murderer targeting women"
+  must_ids: [30874]
+  nice_ids: []
+  tags: ["intent", "thriller", "serial_killer"]
+  candidate_k: 400
+
+- id: I007
+  query: "aging outlaws plan one last violent robbery near the mexican border"
+  must_ids: [576]
+  nice_ids: []
+  tags: ["intent", "western", "crime"]
+  candidate_k: 400
+
+# (교체) Eye of the Beholder -> Contact
+- id: I008
+  query: "a scientist receives a mysterious signal from space and joins a project to make first contact"
+  must_ids: [686]
+  nice_ids: []
+  tags: ["intent", "sci-fi", "first_contact"]
+  candidate_k: 400
+
+- id: I009
+  query: "a soviet sci-fi story where a space expedition investigates a mysterious cosmic nebula and encounters an alien phenomenon"
+  must_ids: [42655]
+  nice_ids: []
+  tags: ["intent", "sci-fi", "space"]
+  candidate_k: 400
+
+# (교체) Fresh -> Terminator Salvation
+- id: I010
+  query: "in a post-apocalyptic future, humans fight a war against machines and a resistance leader becomes key to survival"
+  must_ids: [534]
+  nice_ids: []
+  tags: ["intent", "sci-fi", "post_apocalyptic"]
+  candidate_k: 400

@@ -1,0 +1,98 @@
+# moviefactory/eval/text_queries.yaml
+version: 1
+notes: "Text search regression set"
+
+cases:
+  - id: T001
+    query: "the dark knight"
+    must_ids: [155]
+    nice_ids: []
+    tags: ["title"]
+
+  - id: T002
+    query: "batman vigilante dark city crime"
+    must_ids: [155]
+    nice_ids: []
+    tags: ["semantic", "theme"]
+
+  - id: T003
+    query: "santa claus conquers the martians"
+    must_ids: [32307]
+    nice_ids: []
+    tags: ["title"]
+
+  - id: T004
+    query: "martians"
+    must_ids: [32307]
+    nice_ids: []
+    tags: ["keyword"]
+
+  - id: T005
+    query: "mission to mir"
+    must_ids: [15560]
+    nice_ids: []
+    tags: ["title"]
+
+  # ---------------------------
+  # Semantic / theme cases (from find_by_overview results)
+  # ---------------------------
+
+  - id: S001
+    query: "a violent outlaw gang and a brutal robbery"
+    must_ids: [576]
+    nice_ids: []
+    tags: ["semantic", "heist", "crime"]
+
+  - id: S002
+    query: "a revenge-driven criminal looking for payback"
+    must_ids: [2112]
+    nice_ids: []
+    tags: ["semantic", "revenge", "crime"]
+
+  - id: S003
+    query: "a grim story about a killer stalking victims at night"
+    must_ids: [12238]
+    nice_ids: []
+    tags: ["semantic", "serial_killer", "thriller"]
+
+  - id: S004
+    query: "a psychological thriller about a murderer on the run"
+    must_ids: [79363]
+    nice_ids: []
+    tags: ["semantic", "serial_killer", "thriller"]
+
+  - id: S005
+    query: "a detective hunts a brutal killer in new york"
+    must_ids: [30874]
+    nice_ids: []
+    tags: ["semantic", "serial_killer", "crime"]
+
+  - id: S006
+    query: "a classic crime story about a dangerous cop and corruption"
+    must_ids: [31701]
+    nice_ids: []
+    tags: ["semantic", "crime"]
+
+  - id: S007
+    query: "a gangster family power struggle and revenge"
+    must_ids: [238]
+    nice_ids: []
+    tags: ["semantic", "revenge", "mafia"]
+
+  - id: S008
+    query: "a horror story where people take revenge in a brutal way"
+    must_ids: [28177]
+    nice_ids: []
+    tags: ["semantic", "revenge", "horror"]
+
+  - id: S009
+    query: "an alien planet and a spaceship adventure"
+    must_ids: [16866]
+    nice_ids: []
+    tags: ["semantic", "spaceship", "sci_fi"]
+
+  - id: S010
+    query: "sci-fi mystery involving an expedition and a strange nebula"
+    must_ids: [42655]
+    nice_ids: []
+    tags: ["semantic", "spaceship", "sci_fi"]

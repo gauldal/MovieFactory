@@ -1,0 +1,119 @@
+{% extends "base_mobile.html" %}
+
+{% block content %}
+
+<!-- =========================
+     MOBILE SEARCH HERO
+========================= -->
+<section class="m-search-hero">
+
+  {% if image_mode and search_image_preview %}
+  <div class="m-search-image-preview">
+    <img src="{{ search_image_preview }}" alt="Search Image">
+    <span>Image Search</span>
+  </div>
+  {% endif %}
+
+  <div class="m-search-query">
+    {% if q %}
+      <h2>“{{ q }}” 검색 결과</h2>
+    {% elif genre %}
+      <h2>{{ genre }} 장르</h2>
+    {% else %}
+      <h2>Search Results</h2>
+    {% endif %}
+    <p>{{ total_count }} movies found</p>
+  </div>
+
+</section>
+
+<!-- =========================
+     MOVIE GRID
+========================= -->
+<section class="m-search-results">
+
+  {% if movies %}
+  <div class="m-movie-grid">
+    {% for movie in movies %}
+    <a href="/movie/{{ movie.movie_id }}" class="m-movie-card">
+
+      <img
+        src="{{ movie.poster_url }}"
+        alt="{{ movie.title }}"
+        loading="lazy"
+      >
+
+      <div class="m-movie-meta">
+        <div class="m-movie-title">
+          {{ movie.title }}
+        </div>
+
+        {% if movie.vote_average %}
+        <div class="m-movie-rating">
+          ⭐ {{ "%.1f"|format(movie.vote_average) }}
+        </div>
+        {% endif %}
+      </div>
+
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+    <div class="m-empty">
+      검색 결과가 없습니다.
+    </div>
+  {% endif %}
+
+</section>
+
+<!-- =========================
+     MOBILE PAGINATION
+     (텍스트 / 장르만)
+========================= -->
+{% if total_pages > 1 and not image_mode %}
+<nav class="m-pagination">
+
+  {% if page > 1 %}
+    {% if q %}
+      <a
+        class="m-page-btn"
+        href="{{ url_for('search.search') }}?q={{ q }}&sort={{ sort }}&page={{ page - 1 }}"
+      >
+        ← 이전
+      </a>
+    {% elif genre %}
+      <a
+        class="m-page-btn"
+        href="{{ url_for('search.search') }}?genre={{ genre }}&sort={{ sort }}&page={{ page - 1 }}"
+      >
+        ← 이전
+      </a>
+    {% endif %}
+  {% endif %}
+
+  <span class="m-page-info">
+    {{ page }} / {{ total_pages }}
+  </span>
+
+  {% if page < total_pages %}
+    {% if q %}
+      <a
+        class="m-page-btn"
+        href="{{ url_for('search.search') }}?q={{ q }}&sort={{ sort }}&page={{ page + 1 }}"
+      >
+        다음 →
+      </a>
+    {% elif genre %}
+      <a
+        class="m-page-btn"
+        href="{{ url_for('search.search') }}?genre={{ genre }}&sort={{ sort }}&page={{ page + 1 }}"
+      >
+        다음 →
+      </a>
+    {% endif %}
+  {% endif %}
+
+</nav>
+{% endif %}
+
+{% endblock %}
