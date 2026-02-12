@@ -1,49 +1,154 @@
-# MovieFactory
+# 🎬 MovieFactory
 
-MovieFactory는 단일 원본 데이터로부터 재현 가능한 영화 검색 서비스를 생성하는 프로젝트이다.
+> 단일 기준 데이터셋 기반, 재현 가능한 하이브리드 영화 검색 엔진
 
-본 프로젝트는 텍스트 검색(TF-IDF, SBERT)과 이미지(포스터) 검색(CLIP)을 결합한
-하이브리드 검색 엔진을 기반으로 하며,
-웹과 모바일 환경 모두에서 동일한 데이터와 캐시를 사용해 안정적으로 동작한다.
-
----
-
-## 주요 특징
-
-- 단일 원본 데이터 기반 재현 가능한 빌드
-- 포스터 기반 단일 기준 데이터셋 사용
-- 텍스트 / 이미지 / 장르 검색 지원
-- 웹 / 모바일 UI 분리
-- 캐시 기반 고속 검색
-- Docker 환경 실행 지원
+MovieFactory는 텍스트·이미지 임베딩을 결합한 하이브리드 검색 시스템이다.  
+모든 검색 결과는 **단일 기준 데이터셋 + 캐시 구조**를 기반으로 생성되며,  
+CLI·웹·CI 환경에서 동일한 평가 결과를 보장한다.
 
 ---
 
-## 기준 데이터
+# 1. 프로젝트 목표
 
-본 서비스는 다음 파일을 유일한 기준 데이터로 사용한다.
-
-- `movie_clean_data_poster.csv`
-
-해당 데이터는 포스터가 존재하고,
-이미지 임베딩 생성에 성공한 영화만 포함한다.
-
----
-
-## 실행 개요
-
-1. 원본 데이터 준비
-2. 빌더 실행
-3. 캐시 및 코드 트리 생성
-4. Flask 앱 실행
-
-자세한 내용은 `BUILDER_MANUAL.md`를 참고한다.
+- 🎯 재현 가능한 검색 엔진 구축
+- 🎯 단일 기준 데이터 기반 구조 설계
+- 🎯 회귀 테스트 자동화 (Regression Check)
+- 🎯 CI 환경에서 동일한 평가 결과 보장
+- 🎯 실험 코드와 프로덕션 코드 분리
 
 ---
 
-## 문서 구성
+# 2. 시스템 구조
 
-- `SPEC.md` : 프로젝트 동결 명세
-- `ARCHITECTURE.md` : 시스템 구조 설명
-- `BUILDER_MANUAL.md` : 빌더 사용 방법
-- `PRESENTATION.md` : 프로젝트 발표용 요약
+```
+movie_factory_project/
+│
+├─ moviefactory/
+│   ├─ engine/           # 검색 엔진 코어
+│   ├─ app/              # Flask 웹 서버
+│   ├─ eval/             # 평가 및 회귀 테스트
+│   ├─ data/             # 기준 데이터셋
+│   └─ .cache/           # 임베딩 캐시
+│
+├─ check_regression.bat  # 원클릭 회귀 체크
+└─ .github/workflows/    # CI 자동 실행
+```
+
+---
+
+# 3. 기준 데이터
+
+본 프로젝트는 아래 파일을 **유일한 기준 데이터**로 사용한다.
+
+```
+moviefactory/data/movie_clean_data_poster.csv
+```
+
+조건:
+- 포스터 존재
+- 이미지 임베딩 생성 성공
+- 텍스트 정제 완료
+
+---
+
+# 4. 검색 구조
+
+### 🔹 Text
+- TF-IDF
+- SBERT
+
+### 🔹 Image
+- CLIP
+
+### 🔹 Hybrid
+가중치 기반 점수 결합 방식
+
+```
+score = w1*sbert + w2*tfidf + w3*clip + w4*cf
+```
+
+---
+
+# 5. 평가 시스템 (Evaluation)
+
+## 기본 평가 실행
+
+```
+python -m moviefactory.eval.run_text_eval
+```
+
+## 특정 YAML 실행
+
+```
+python -m moviefactory.eval.run_text_eval moviefactory/eval/text_queries_intent.yaml
+```
+
+---
+
+# 6. 회귀 테스트 (Regression Check)
+
+### 🔹 최초 기준 업데이트
+
+```
+python -m moviefactory.eval.regression_check moviefactory/eval/text_queries_intent.yaml --update-baseline
+```
+
+### 🔹 일반 회귀 검사
+
+```
+python -m moviefactory.eval.regression_check moviefactory/eval/text_queries_intent.yaml
+```
+
+또는
+
+```
+check_regression.bat
+```
+
+성공 시:
+
+```
+✅ PASS (no regression)
+```
+
+---
+
+# 7. CI 자동 실행
+
+GitHub Actions에서:
+
+- main push 시 자동 실행
+- 회귀 발생 시 실패 처리
+
+Workflow 위치:
+
+```
+.github/workflows/regression.yml
+```
+
+---
+
+# 8. 개발 철학
+
+- 단일 소스 데이터
+- 캐시 기반 재현성
+- 평가 우선 설계
+- CLI와 CI 동일 동작
+- 결과 수치 기반 개선
+
+---
+
+# 9. 현재 기준 성능 (Intent Eval)
+
+| Metric   | Score |
+|----------|-------|
+| hit@1    | 0.900 |
+| hit@5    | 1.000 |
+| hit@10   | 1.000 |
+| mean_rank| 1.30  |
+
+---
+
+# 10. 라이선스
+
+Private Project
