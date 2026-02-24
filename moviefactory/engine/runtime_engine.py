@@ -17,7 +17,7 @@ from moviefactory.engine.hybrid_engine import hybrid_rerank
 from moviefactory.config.hybrid_weights import HYBRID_WEIGHTS
 from moviefactory.engine.tfidf_engine import tfidf_engine
 from moviefactory.engine.sbert_engine import sbert_engine
-from moviefactory.engine.clip_engine import clip_engine
+from moviefactory.engine.clip_engine import get_clip_engine
 
 
 def _normalize_space(s: str) -> str:
@@ -279,7 +279,7 @@ class RuntimeEngine:
             return []
 
         # ✅ runtime_engine.search_hybrid(image)에서 이미 사용 중인 원본 CLIP 점수 API
-        clip_scores = clip_engine.score(
+        clip_scores = get_clip_engine().score(
             image_path,
             top_k=None,          # 전체 점수 받되
             min_score=min_score, # 필터는 최소로
@@ -532,7 +532,7 @@ class RuntimeEngine:
         # ------------------------------
         if search_type == "image" and image_path:
             # 1) CLIP 점수: 전체 대상 비교
-            clip_scores = clip_engine.score(
+            clip_scores = get_clip_engine().score(
                 image_path,
                 top_k=None,
                 min_score=-1.0,
@@ -552,7 +552,7 @@ class RuntimeEngine:
                 # 사건/액션 힌트
                 "explosion", "fire", "violence", "revenge",
             ]
-            prompt_scores = clip_engine.score_prompts(image_path, prompts) or {}
+            prompt_scores = get_clip_engine().score_prompts(image_path, prompts) or {}
             top_prompts = sorted(prompt_scores.items(), key=lambda x: x[1], reverse=True)[:6]
             pseudo_query = " ".join([p for p, s in top_prompts if s > 0]).strip()
 

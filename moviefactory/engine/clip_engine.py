@@ -1,12 +1,10 @@
 # moviefactory/engine/clip_engine.py
-
 from __future__ import annotations
 
 import os
+from typing import Optional
 
 import numpy as np
-import torch
-import clip
 from PIL import Image
 
 from moviefactory.utils.engine_utils import (
@@ -17,16 +15,28 @@ from moviefactory.utils.engine_utils import (
 
 class CLIPEngine:
     """
-    CLIP Encoder
+    CLIP Encoder (lazy heavy imports inside __init__)
     - image -> embedding
     - text  -> embedding
     """
 
     def __init__(self):
-        self.device = "cpu"
-        self.model, self.preprocess = clip.load("ViT-B/32", device=self.device)
+        # Heavy imports are intentionally inside __init__ (Render Free 안정화)
+        import torch  # noqa: WPS433
+        import open_clip  # noqa: WPS433
 
-    def encode_image(self, image_path: str) -> np.ndarray | None:
+        self._torch = torch
+        self._open_clip = open_clip
+
+        self.device = "cpu"
+        self.model, _, self.preprocess = open_clip.create_model_and_transforms(
+            "ViT-B-32",
+            pretrained="openai",
+        )
+        self.model = self.model.to(self.device)
+        self.model.eval()
+
+    def encode_image(self, image_path: str) -> Optional[np.ndarray]:
         if not image_path:
             return None
         try:
@@ -35,7 +45,9 @@ class CLIPEngine:
             print("[CLIP] Image.open failed:", e)
             return None
 
+        torch = self._torch
         image_input = self.preprocess(image).unsqueeze(0).to(self.device)
+
         with torch.no_grad():
             emb = self.model.encode_image(image_input)
 
@@ -45,11 +57,15 @@ class CLIPEngine:
             return None
         return emb / norm
 
-    def encode_text(self, texts: list[str]) -> np.ndarray | None:
+    def encode_text(self, texts: list[str]) -> Optional[np.ndarray]:
         if not texts:
             return None
+
+        torch = self._torch
+        open_clip = self._open_clip
+
         try:
-            tokens = clip.tokenize(texts).to(self.device)
+            tokens = open_clip.tokenize(texts).to(self.device)
         except Exception as e:
             print("[CLIP] tokenize failed:", e)
             return None
@@ -69,17 +85,27 @@ class CLIPScorer:
     """
 
     def __init__(self):
+        # Render에서 완전히 끄고 싶으면 환경변수로 제어
+        # Render Dashboard > Environment Variables: DISABLE_CLIP=1
+        if os.getenv("DISABLE_CLIP", "").strip().lower() in {"1", "true", "yes", "y"}:
+            print("[CLIP] disabled by DISABLE_CLIP env")
+            self.is_ready = False
+            self.metadata = None
+            self.embeddings = None
+            self.movie_ids = []
+            self.encoder = None
+            return
+
         self.is_ready = False
         self.metadata = None
-        self.embeddings: np.ndarray | None = None
+        self.embeddings: Optional[np.ndarray] = None
         self.movie_ids: list[int] = []
-        self.encoder: CLIPEngine | None = None
+        self.encoder: Optional[CLIPEngine] = None
 
         try:
             self.metadata = load_metadata() or {}
 
-            # ✅ 1) clip_embeddings.npz를 우선 사용 (npz 안의 movie_ids가 "진짜 매핑 키")
-            #    경로: moviefactory/.cache/full_working/clip/clip_embeddings.npz
+            # ✅ 1) clip_embeddings.npz 우선 사용
             base_dir = os.path.dirname(os.path.dirname(__file__))  # moviefactory/
             npz_path = os.path.join(base_dir, ".cache", "full_working", "clip", "clip_embeddings.npz")
 
@@ -90,15 +116,13 @@ class CLIPScorer:
                 z = np.load(npz_path)
                 if "embeddings" not in z.files or "movie_ids" not in z.files:
                     raise RuntimeError(f"Invalid npz format: {npz_path} (need embeddings + movie_ids)")
-
                 embeddings = z["embeddings"]
                 movie_ids = z["movie_ids"].tolist()
             else:
-                # ✅ 2) fallback: 기존 로더 사용 (하지만 이 경우도 movie_ids 매핑은 매우 위험)
+                # ✅ 2) fallback: 기존 로더
                 embeddings = load_clip_embeddings()
                 if embeddings is None:
                     raise RuntimeError("CLIP embeddings missing")
-
                 if "movie_ids" not in self.metadata:
                     raise RuntimeError("metadata.json missing 'movie_ids'")
                 movie_ids = self.metadata["movie_ids"]
@@ -106,7 +130,6 @@ class CLIPScorer:
             self.embeddings = np.asarray(embeddings, dtype=np.float32)
             self.movie_ids = [int(x) for x in movie_ids]
 
-            # ✅ 길이 불일치는 '자르기' 금지 (자르면 매핑이 틀어진 채로 굳어짐)
             n_emb = int(self.embeddings.shape[0])
             n_ids = int(len(self.movie_ids))
             if n_emb == 0 or n_ids == 0:
@@ -122,10 +145,11 @@ class CLIPScorer:
             denom = np.linalg.norm(self.embeddings, axis=1, keepdims=True) + 1e-9
             self.embeddings = (self.embeddings / denom).astype(np.float32)
 
-            self.encoder = CLIPEngine()
+            # ✅ encoder는 여기서 만들지 않는다 (진짜 중요!)
+            self.encoder = None
             self.is_ready = True
 
-            print(f"[CLIP] ready: n={n_emb} source={'npz' if os.path.exists(npz_path) else 'legacy'}")
+            print(f"[CLIP] ready (encoder lazy): n={n_emb} source={'npz' if os.path.exists(npz_path) else 'legacy'}")
 
         except Exception as e:
             print("[CLIP] scorer disabled:", e)
@@ -135,17 +159,37 @@ class CLIPScorer:
             self.movie_ids = []
             self.encoder = None
 
+    def _get_encoder(self) -> Optional[CLIPEngine]:
+        if not self.is_ready:
+            return None
+        if self.encoder is not None:
+            return self.encoder
+
+        try:
+            self.encoder = CLIPEngine()
+            return self.encoder
+        except Exception as e:
+            # 모델 로딩 실패하면 이후 요청도 계속 실패하므로 disable 처리
+            print("[CLIP] encoder init failed; disabling CLIP:", e)
+            self.encoder = None
+            self.is_ready = False
+            return None
+
     def score(
         self,
         image_path: str,
         *,
-        top_k: int | None = None,
+        top_k: Optional[int] = None,
         min_score: float = -1.0,
     ) -> dict[int, float]:
-        if not self.is_ready or not image_path or self.embeddings is None or self.encoder is None:
+        if not self.is_ready or not image_path or self.embeddings is None:
             return {}
 
-        img_emb = self.encoder.encode_image(image_path)
+        enc = self._get_encoder()
+        if enc is None:
+            return {}
+
+        img_emb = enc.encode_image(image_path)
         if img_emb is None:
             return {}
 
@@ -169,14 +213,18 @@ class CLIPScorer:
         return out
 
     def score_prompts(self, image_path: str, prompts: list[str]) -> dict[str, float]:
-        if not self.is_ready or not image_path or not prompts or self.encoder is None:
+        if not self.is_ready or not image_path or not prompts:
             return {}
 
-        img_emb = self.encoder.encode_image(image_path)
+        enc = self._get_encoder()
+        if enc is None:
+            return {}
+
+        img_emb = enc.encode_image(image_path)
         if img_emb is None:
             return {}
 
-        txt_embs = self.encoder.encode_text(prompts)
+        txt_embs = enc.encode_text(prompts)
         if txt_embs is None:
             return {}
 
@@ -184,4 +232,16 @@ class CLIPScorer:
         return {prompts[i]: float(scores[i]) for i in range(len(prompts))}
 
 
-clip_engine = CLIPScorer()
+_clip_engine_instance: Optional[CLIPScorer] = None
+
+
+def get_clip_engine() -> CLIPScorer:
+    """
+    Global accessor (lazy singleton)
+    - CLIPScorer is created only when first requested
+    - encoder/model is created only when score() is called
+    """
+    global _clip_engine_instance
+    if _clip_engine_instance is None:
+        _clip_engine_instance = CLIPScorer()
+    return _clip_engine_instance
