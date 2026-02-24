@@ -4,40 +4,62 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (!btn || !box) return;
 
+  const LABEL_OPEN = "See Why";
+  const LABEL_CLOSE = "Close";
+  const LABEL_LOADING = "Generating explanation…";
+
   // 초기 상태
   box.style.display = "none";
   box.dataset.loaded = "false";
   box.dataset.open = "false";
+  btn.textContent = LABEL_OPEN;
+  btn.setAttribute("aria-expanded", "false");
+
+  function openBox() {
+    box.style.display = "block";
+    box.dataset.open = "true";
+    btn.textContent = LABEL_CLOSE;
+    btn.setAttribute("aria-expanded", "true");
+  }
+
+  function closeBox() {
+    box.style.display = "none";
+    box.dataset.open = "false";
+    btn.textContent = LABEL_OPEN;
+    btn.setAttribute("aria-expanded", "false");
+  }
+
+  function setLoading() {
+    box.innerHTML = `
+      <div class="md-explain-loading">
+        <span class="md-spinner" aria-hidden="true"></span>
+        <span>${LABEL_LOADING}</span>
+      </div>
+    `;
+    openBox();
+  }
 
   btn.addEventListener("click", async () => {
-
-    /* ===============================
-       1. 이미 열려 있으면 → 닫기
-    =============================== */
+    // 이미 열려 있으면 닫기
     if (box.dataset.open === "true") {
-      box.style.display = "none";
-      box.dataset.open = "false";
+      closeBox();
       return;
     }
 
-    /* ===============================
-       2. 이미 불러온 설명이면 → 재사용
-    =============================== */
+    // 이미 로드했으면 재사용해서 열기
     if (box.dataset.loaded === "true") {
-      box.style.display = "block";
-      box.dataset.open = "true";
+      openBox();
       return;
     }
 
-    /* ===============================
-       3. 최초 1회만 API 호출
-    =============================== */
+    // 최초 1회만 API 호출
+    btn.disabled = true;
+    setLoading();
+
     try {
       const res = await fetch("/api/explain", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           movie_id: btn.dataset.movieId,
           title: btn.dataset.title,
@@ -46,28 +68,21 @@ document.addEventListener("DOMContentLoaded", () => {
         }),
       });
 
-      if (!res.ok) {
-        throw new Error("API request failed");
-      }
+      if (!res.ok) throw new Error("API request failed");
 
       const data = await res.json();
+      const text = data && data.explanation ? String(data.explanation).trim() : "";
 
-      if (!data || !data.explanation) {
-        throw new Error("Invalid response");
-      }
+      if (!text) throw new Error("Empty explanation");
 
-      // 결과 표시
-      box.innerText = data.explanation;
-      box.style.display = "block";
-
-      // 상태 고정 (재호출 방지)
+      box.textContent = text;
       box.dataset.loaded = "true";
-      box.dataset.open = "true";
-
+      openBox();
     } catch (err) {
-      box.innerText = "설명을 불러오지 못했습니다.";
-      box.style.display = "block";
-      box.dataset.open = "true";
+      box.textContent = "We couldn’t load the recommendation details. Please try again later.";
+      openBox();
+    } finally {
+      btn.disabled = false;
     }
   });
 });

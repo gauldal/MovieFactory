@@ -58,3 +58,114 @@
   - 특정 대표 포스터(배트맨 등) Top-N 포함 여부
   - 장르/톤 일치율(정성)
   - 유사 포스터(색감/구도) vs 유사 서사(overview) 중 우선순위
+
+[데이터 관련]
+□ movie_clean_data_poster.csv 컬럼 확인했는가? (movie_id 사용)
+□ Canonical CSV row 수 변동 없는가?
+□ eval_reports는 git에 추적되지 않는가?
+
+[평가 관련]
+□ text_queries_intent.yaml 중복 타깃 없는가?
+□ title anchor 전략 사용했는가?
+□ baseline.json 최신 상태인가?
+
+[CI 관련]
+□ regression.yml이 check_regression.bat를 직접 실행하는가?
+□ Windows runner 사용 중인가?
+□ exit code가 정확히 전달되는가?
+
+[Git 관련]
+□ origin URL이 https://github.com/gauldal/MovieFactory.git 인가?
+□ main 브랜치 강제 push 후 정상 동기화 되었는가?
+□ GitHub Actions green 상태인가?
+
+# Decision Log – 2026-02-12
+
+---
+
+## 1. 포트폴리오용인데 로딩/예외 처리 필요?
+
+결론:
+- 기본 기능이 우선
+- 과도한 UX 연출은 불필요
+- 안정성 > 연출
+
+---
+
+## 2. 모바일 트레일러 3개 vs 4개
+
+문제:
+- max_items 변경했는데 반영 안 됨
+
+원인:
+- movie_api.py가 아닌 main.py에서 실제 갯수 제어
+
+결론:
+- 모바일 4개
+- 웹 3개 유지
+
+---
+
+## 3. Similar 개수 모바일에서 줄일 것인가?
+
+문제:
+- 모바일 2열 구조에서 홀수 노출 불균형
+
+결론:
+- 모바일 6개 (3x2 구성)
+- 웹 14개 유지
+
+---
+
+## 4. Explain 기능 어디에 둘 것인가?
+
+선택지:
+- 검색 리스트
+- 상세 페이지
+
+결론:
+- 상세 페이지에만 배치
+- 리스트는 UI 복잡도 증가로 제외
+
+---
+
+## 5. 모바일 톤 블랙 vs 화이트
+
+문제:
+- 블랙톤 일부 적용으로 통일감 붕괴
+
+결론:
+- 웹/모바일 모두 화이트톤 유지
+
+[QA CHECKLIST — MovieFactory v1.3]
+
+A. HERO
+□ Popular / Latest 토글 시 문구 정상 변경되는가?
+□ Hero sort 버튼 active 상태 정상인가?
+□ CLS (레이아웃 점프) 발생하지 않는가?
+
+B. MOBILE
+□ 장르 패널 열 때 배경 스크롤 고정되는가?
+□ border 라인 제거 후 UI 깨짐 없는가?
+□ 페이지네이션 중앙 정렬 유지되는가?
+
+C. IMAGE SEARCH
+□ 600개 과다 노출 문제 해결되었는가?
+□ best_score ratio 적용 후 결과 수 안정적인가?
+□ CLIP score 0.000 문제 해결되었는가?
+
+D. DASHBOARD
+□ Text 검색 시 TF-IDF / SBERT 동시 작동하는가?
+□ Image 검색 시 CLIP만 작동하는가?
+□ Engine Bar 길이 점수 비례하는가?
+□ Overlap 항목 강조되는가?
+□ Chart 영역 스크롤 영향 받지 않는가?
+
+E. FOOTER
+□ 한 줄로 출력되는가?
+□ Sticky 유지되는가?
+□ 가운데 문구 overflow 시 깨지지 않는가?
+
+F. 반응형
+□ 1024px 이하 grid 1열 전환되는가?
+□ 모바일에서 dashboard input grid 깨지지 않는가?

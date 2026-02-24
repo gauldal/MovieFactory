@@ -12,7 +12,7 @@
       <div class="mf-hero-text-stack">
 
         <p class="mf-hero-eyebrow">
-          영화를 다양한 방식으로 탐색해 보세요
+          Discover movies in different ways.
         </p>
 
         <h1 class="mf-hero-title">
@@ -21,7 +21,7 @@
           {% elif genre %}
             {{ genre }} Movies
           {% elif q %}
-            "{{ q }}" 검색 결과
+            Results for [{{ q }}]
           {% else %}
             Search Results
           {% endif %}
@@ -29,16 +29,16 @@
 
         <p class="mf-hero-desc">
           {% if image_mode %}
-            업로드한 이미지와 유사한 영화 검색 결과입니다
+            Movies similar to your uploaded image.
           {% elif genre %}
-            선택한 장르에 해당하는 영화 목록입니다
+            Movies in the selected genre.
           {% elif q %}
-            입력한 키워드와 연관된 영화 검색 결과입니다
+            Search results related to your keywords.
           {% endif %}
         </p>
 
         <p class="mf-hero-desc-muted">
-          총 {{ total_count }}개의 영화가 검색되었습니다
+          {{ total_count }} movies found
         </p>
 
       </div>
@@ -61,13 +61,13 @@
         href="{{ url_for('search.search', q=q, genre=genre, sort='latest', page=1) }}"
         class="mf-sort-btn {% if sort == 'latest' %}active{% endif %}"
       >
-        최신순
+        Latest
       </a>
       <a
         href="{{ url_for('search.search', q=q, genre=genre, sort='popular', page=1) }}"
         class="mf-sort-btn {% if sort != 'latest' %}active{% endif %}"
       >
-        인기순
+        Popular
       </a>
     </div>
 
@@ -121,7 +121,7 @@
   <a
     href="{{ url_for('search.search', q=q, genre=genre, sort=sort, page=page-1) }}"
     class="mf-page-btn"
-  >이전</a>
+  >Previous</a>
   {% endif %}
 
   <span class="mf-page-info">
@@ -132,7 +132,7 @@
   <a
     href="{{ url_for('search.search', q=q, genre=genre, sort=sort, page=page+1) }}"
     class="mf-page-btn"
-  >다음</a>
+  >Next</a>
   {% endif %}
 
 </div>

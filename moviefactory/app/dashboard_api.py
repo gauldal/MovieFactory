@@ -80,24 +80,66 @@ def dashboard_overview():
         "year_distribution": year_distribution,
     })
 
+# ======================================================
+# Recommendation Analysis (Proxy A/B: Ranker OFF vs ON)
+# - 기존: Dummy
+# - 변경: OFF(TF-IDF only) vs ON(hybrid_rerank) 오프라인 프록시 5개
+# ======================================================
 
-# ======================================================
-# Recommendation Analysis (Dummy)
-# ======================================================
+from moviefactory.app.ab_proxy import run_ab_proxy_metrics  # ADD
+
 @bp.route("/dashboard/recommendation_analysis", methods=["GET"])
 def dashboard_recommendation_analysis():
+    runtime_engine = get_runtime_engine()
+
+    ab = run_ab_proxy_metrics(
+        runtime_engine,
+        n_seeds=120,
+        top_k=20,
+        seed=42,
+        sort="popular",
+        candidate_k=700,
+    )
+
+    # 실패 시에도 기존 스키마 유지 (프론트 안전)
+    if not ab.get("ok"):
+        return jsonify({
+            "engine_contribution": {
+                "TF-IDF": 0.30,
+                "SBERT": 0.40,
+                "CLIP": 0.15,
+                "CF-SVD": 0.15
+            },
+            "ranker_comparison": {}
+        })
+
+    m = ab["metrics"]
+
+    # ✅ dashboard.js는 key(라벨) + {off,on}면 뭐든 차트로 그림
+    ranker_comparison = {
+        m["wr"]["label"]: {"off": m["wr"]["off"], "on": m["wr"]["on"]},
+        m["pop_log"]["label"]: {"off": m["pop_log"]["off"], "on": m["pop_log"]["on"]},
+        m["votecount_log"]["label"]: {"off": m["votecount_log"]["off"], "on": m["votecount_log"]["on"]},
+        m["genre_coherence"]["label"]: {"off": m["genre_coherence"]["off"], "on": m["genre_coherence"]["on"]},
+        m["genre_diversity"]["label"]: {"off": m["genre_diversity"]["off"], "on": m["genre_diversity"]["on"]},
+    }
+
     return jsonify({
+        # engine_contribution은 지금은 “설명용 도넛”이므로 유지(원하면 HYBRID_WEIGHTS 기반으로도 바꿀 수 있음)
         "engine_contribution": {
             "TF-IDF": 0.30,
             "SBERT": 0.40,
             "CLIP": 0.15,
             "CF-SVD": 0.15
         },
-        "ranker_comparison": {
-            "TF-IDF": {"off": 0.62, "on": 0.71},
-            "SBERT": {"off": 0.68, "on": 0.78},
-            "CLIP": {"off": 0.55, "on": 0.63},
-            "CF-SVD": {"off": 0.58, "on": 0.66}
+        "ranker_comparison": ranker_comparison,
+        # (옵션) 디버깅/설명용 메타
+        "ab_meta": {
+            "n_sessions": ab["n_sessions"],
+            "top_k": ab["top_k"],
+            "seed_count_requested": ab["seed_count_requested"],
+            "sort": ab["sort"],
+            "candidate_k": ab["candidate_k"],
         }
     })
 
@@ -179,6 +221,12 @@ def dashboard_search_image():
     image.save(tmp_path)
 
     runtime_engine = get_runtime_engine()
+
+    # ✅ (ADD) Dashboard에서는 RRF 결합점수 대신 "원본 CLIP similarity"를 보여준다.
+    clip_fn = getattr(runtime_engine, "get_image_clip_similarity", None)
+    if callable(clip_fn):
+        results = clip_fn(tmp_path, top_k=5)
+        return jsonify({"results": results})
 
     # ✅ RuntimeEngine.search_hybrid() CONTRACT:
     #    returns List[Dict] ONLY (tuple 반환 금지)

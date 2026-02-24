@@ -114,14 +114,25 @@
 <div class="mf-bottom-bar">
   <div class="mf-bottom-inner">
     <div class="mf-bottom-left">
-      <span class="mf-bottom-label">정렬:</span>
+      <span class="mf-bottom-label">ARRAY:</span>
       <span class="mf-bottom-value">
         {% if sort == "popular" %}
-          인기순
+          Popular
         {% else %}
-          최신순
+          Latest
         {% endif %}
       </span>
+    </div>
+
+    <!-- ✅ 추가: 가운데 푸터 문구 -->
+    <div class="mf-bottom-center">
+      <span class="footer-brand">MovieFactory</span>
+      <span class="footer-sep">·</span>
+      <span class="footer-desc">AI-powered Movie Discovery Platform</span>
+      <span class="footer-sep">·</span>
+      <span>© 2025 MovieFactory</span>
+      <span class="footer-sep">·</span>
+      <a href="/dashboard" class="footer-link">Analysis Dashboard</a>
     </div>
 
     <div class="mf-bottom-right">
@@ -131,6 +142,7 @@
   </div>
 </div>
 
+<!-- ✅ 기존 footer는 숨길 거라 유지해도 됨 -->
 <footer class="footer-dashboard">
   <div class="footer-inner">
     <span class="footer-brand">MovieFactory</span>
@@ -142,7 +154,3 @@
     <a href="/dashboard" class="footer-link">Analysis Dashboard</a>
   </div>
 </footer>
-
-</body>
-</html>
-

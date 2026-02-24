@@ -790,39 +790,71 @@
     overflow-y: auto;
 }
 
-/* Result Item */
+/* Result Item (Dashboard Engine Comparison) */
 .mf-engine-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  display: block;              /* ✅ flex 제거 */
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #eee;
+  margin-bottom: 10px;
+}
 
-    padding: 8px 10px;
-    border-radius: 6px;
-
-    background: #fafafa;
-    border: 1px solid #f1f5f9;
-
-    font-size: 13px;
+/* Row: title + score */
+.mf-engine-item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 /* Title */
 .mf-engine-item-title {
-    font-weight: 600;
-    color: #222;
+  font-weight: 600;
+  color: #222;
+  flex: 1;
 
-    max-width: 70%;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  /* ✅ 1줄 말줄임 유지(원하면 2줄로 바꿀 수 있음) */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: none;             /* ✅ 70% 제한 제거 */
 }
 
 /* Score */
 .mf-engine-item-score {
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 12px;
-    color: #555;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  color: #555;
+  white-space: nowrap;
+  opacity: .75;
 }
 
+/* Bar */
+.mf-engine-bar {
+  height: 6px;
+  background: #f2f2f2;
+  border-radius: 999px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+.mf-engine-bar-fill {
+  height: 100%;
+  background: #111;
+  border-radius: 999px;
+  opacity: .15;
+}
+
+/* Overlap highlight */
+.mf-engine-item.is-overlap {
+  border-color: #d7e7ff;
+  background: #f6fbff;
+}
+
+.mf-engine-bar-fill.score-low  { opacity: .10; }
+.mf-engine-bar-fill.score-mid  { opacity: .18; }
+.mf-engine-bar-fill.score-high { opacity: .28; }
 /* =====================================================
    Empty / Error State
 ===================================================== */
@@ -1000,3 +1032,73 @@
 }
 
 
+.mf-engine-item{
+  padding: 10px 12px;
+  border: 1px solid #eee;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  background: #fff;
+}
+
+.mf-engine-item-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 10px;
+}
+
+.mf-engine-item-title{
+  font-size: 13px;
+  line-height: 1.2;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  flex: 1;
+}
+
+.mf-engine-item-score{
+  font-size: 12px;
+  opacity: .75;
+  white-space:nowrap;
+}
+
+.mf-engine-bar{
+  height: 6px;
+  background: #f2f2f2;
+  border-radius: 999px;
+  margin-top: 8px;
+  overflow:hidden;
+}
+
+.mf-engine-bar-fill{
+  height: 100%;
+  background: #111; /* 필요하면 테마색으로 */
+  border-radius: 999px;
+  opacity: .15; /* 과하게 튀지 않게 */
+}
+
+.mf-engine-item.is-overlap{
+  border-color: #d7e7ff;
+  background: #f6fbff;
+}
+
+#abMeta {
+  font-size: 13px;
+  color: #6b7280;
+  display: inline-block;
+  justify-content: flex-end;
+  margin-top: 8px;
+  font-weight: 500;
+  text-align: right;
+  float: right;
+  background: rgba(0,0,0,0.03);
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+#abDeltaSummary {
+  max-width: 100%;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;      /* 2줄까지만 */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

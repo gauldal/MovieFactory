@@ -180,3 +180,17 @@ def search():
     # ==================================================
     _clear_image_session()
     return redirect(url_for("index"))
+
+@bp.route("/api/explain/<int:movie_id>")
+def api_explain(movie_id):
+    from moviefactory.engine.explanation_engine import ExplanationEngine
+    from moviefactory.engine.engine_provider import get_runtime_engine
+
+    runtime_engine = get_runtime_engine()
+    explanation_engine = ExplanationEngine(runtime_engine)
+    explanation = explanation_engine.explain(movie_id)
+
+    return {
+        "movie_id": movie_id,
+        "explanation": explanation
+    }

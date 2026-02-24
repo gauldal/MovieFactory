@@ -272,3 +272,156 @@ MovieFactory는 영화 메타데이터를 기반으로
   - MIN_RESULTS=120 (입력이 약한 경우 축소)
   - clip_best(원점수) 기준으로 약한 쿼리 판정:
     - clip_best < 0.55 → MIN_RESULTS까지만 반환
+
+프로젝트명: MovieFactory
+목표: 하이브리드 영화 검색 엔진의 정량 평가 및 회귀 방지 자동화
+
+[엔진 구성]
+- SBERT + TF-IDF 하이브리드 검색
+- Canonical CSV: moviefactory/data/movie_clean_data_poster.csv
+- 평가 쿼리: moviefactory/eval/text_queries_intent.yaml
+
+[평가 지표]
+- hit@1
+- hit@5
+- hit@10
+- mean_rank (정답 존재 시 평균 순위)
+
+[평가 실행 명령]
+python -m moviefactory.eval.run_text_eval moviefactory/eval/text_queries_intent.yaml
+
+[회귀 체크 명령]
+python -m moviefactory.eval.regression_check moviefactory/eval/text_queries_intent.yaml
+
+[원클릭 실행]
+check_regression.bat
+
+[Baseline 정책]
+- baseline.json과 비교
+- hit@k 감소 시 FAIL
+- mean_rank 증가 시 FAIL
+
+[현재 안정 상태]
+hit@1  = 1.000
+hit@5  = 1.000
+hit@10 = 1.000
+mean_rank = 1.00
+
+# MovieFactory – Mobile & Detail Enhancement Spec
+Date: 2026-02-12
+
+---
+
+## 1. 이미지 검색 시스템 안정화
+
+### 목표
+- CLIP 기반 이미지 검색 정확도 향상
+- RRF(Reciprocal Rank Fusion) 결합 안정화
+- 디버그 로그 제거 후 클린 모드 전환
+
+### 구현 내용
+- CLIP + SBERT RRF 결합 구조 유지
+- CLIP pool = 600
+- SBERT pool = 800
+- RRF weight:
+  - w_clip = 1.0
+  - w_sbert = 1.4
+- 디버그 로그 전면 제거 (운영 모드)
+
+---
+
+## 2. 모바일 상세 페이지 개선
+
+### 트레일러 개수
+- 모바일: 4개
+- 웹: 3개
+
+### Similar Movies 개수
+- 모바일: 6개 (2행 구성)
+- 웹: 14개 유지
+
+### 분기 기준
+- is_mobile_request() 기반 템플릿 분기
+
+---
+
+## 3. Explain 기능 (추천 이유 표시)
+
+### 위치
+- movie_detail_mobile.html
+- movie_detail.html
+
+### 동작 방식
+- 버튼 클릭 → /api/explain/<movie_id> 호출
+- JS(explain.js)로 결과 비동기 표시
+- aria-live 적용 (접근성 대응)
+
+---
+
+## 4. 모바일 UI 통일
+
+### 톤
+- 모바일 화이트톤 유지 (웹과 통일)
+- 블랙톤 제거
+
+### 구조
+- 모바일 2열 카드 레이아웃
+- Similar 3x2 유지
+- Trailer 2x2 구성
+
+---
+
+## 5. 정리 사항
+
+- 중복 트레일러 호출 제거
+- 디버그 print 제거
+- 운영용 안정 코드 확정
+
+[PROJECT] MovieFactory v1.3 — UI & Dashboard Stabilization Spec
+
+1. HOME / SEARCH HERO
+- Popular / Latest 토글 시 Hero 문구 동적 변경
+- sort 파라미터 기반 텍스트 조건 분기
+- Eyebrow / Title / Description 구조 고정
+- CSS 단일 소스 유지 (mf-hero-* 계열)
+
+2. MOBILE UI
+- 햄버거 장르 패널:
+  - overlay 고정 (scroll 영향 제거)
+  - header 위 레이어 정리
+  - 불필요 border 제거
+- 페이지네이션 중앙 정렬
+- 장르 패널 라인 제거 (clean UI 유지)
+
+3. IMAGE SEARCH LOGIC
+- best_score * ratio 방식 적용
+- anchor 기준 컷 도입
+- 결과 수 과다 노출(600개) → 안정화
+- CLIP score 정규화 적용 (0~1)
+
+4. ENGINE COMPARISON (Dashboard)
+- TF-IDF / SBERT / CLIP 병렬 비교
+- Top 5 노출
+- 점수 기반 bar 시각화
+- ratio 기반 score-high / mid / low 클래스 적용
+- overlap highlight 적용
+
+5. DASHBOARD LAYOUT
+- Dataset Overview 카드형 구조
+- Search Controls 50:50 grid
+- Engine Grid 3-column 고정
+- Release Year Chart 고정 height
+- Recommendation Analysis 2-column grid
+
+6. FOOTER 통합
+- mf-bottom-bar에 footer 문구 통합
+- 기존 footer-dashboard 숨김
+- 한 줄 구조:
+  [ARRAY] — [브랜드 문구] — [Top / Dashboard]
+- sticky bottom 유지
+
+7. CSS 정책
+- SINGLE SOURCE OF TRUTH 유지
+- dashboard 영역은 mf-dashboard-* prefix만 사용
+- global grid geometry 절대 수정 금지
+- :root 변수 오염 금지

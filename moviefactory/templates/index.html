@@ -11,21 +11,30 @@
     <div class="mf-hero-text">
       <div class="mf-hero-text-stack">
 
-        <p class="mf-hero-eyebrow">
-          지금 가장 많은 사람들이 보고 있는 영화
-        </p>
+        {% set sort = sort or 'popular' %}
 
-        <h1 class="mf-hero-title">
-          Popular Movies
-        </h1>
+        {% if sort == 'latest' %}
+          <p class="mf-hero-eyebrow">New &amp; Noteworthy</p>
 
-        <p class="mf-hero-desc">
-          오늘 MovieFactory에서 가장 많이 탐색된 영화 모음
-        </p>
+          <h1 class="mf-hero-title">Latest Movies</h1>
 
-        <p class="mf-hero-desc-muted">
-          실시간 조회·평점·반응 데이터를 기준으로 선정되었습니다
-        </p>
+          <p class="mf-hero-desc">Recently Added on MovieFactory</p>
+
+          <p class="mf-hero-desc-muted">
+            Sorted by release date.
+          </p>
+
+        {% else %}
+          <p class="mf-hero-eyebrow">Trending Now</p>
+
+          <h1 class="mf-hero-title">Popular Movies</h1>
+
+          <p class="mf-hero-desc">Most Popular on MovieFactory Today</p>
+
+          <p class="mf-hero-desc-muted">
+            Ranked based on real-time views, ratings, and user engagement.
+          </p>
+        {% endif %}
 
       </div>
     </div>
@@ -36,18 +45,19 @@
         href="{{ url_for('index', sort='latest') }}"
         class="mf-sort-btn {% if sort == 'latest' %}active{% endif %}"
       >
-        최신순
+        Latest
       </a>
       <a
         href="{{ url_for('index', sort='popular') }}"
         class="mf-sort-btn {% if sort != 'latest' %}active{% endif %}"
       >
-        인기순
+        Popular
       </a>
     </div>
 
   </div>
 </section>
+
 
 <!-- =========================
      MOVIE GRID

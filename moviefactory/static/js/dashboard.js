@@ -10,7 +10,19 @@ let yearChart = null;
 let engineContributionChart = null;
 let rankerComparisonChart = null;
 
+// ChartDataLabels plugin 등록 (CDN 로드되어 있으면 전역에 존재)
+function registerChartPlugins() {
+  try {
+    if (window.Chart && window.ChartDataLabels) {
+      Chart.register(ChartDataLabels);
+    }
+  } catch (e) {
+    // plugin 없으면 조용히 무시
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
+  registerChartPlugins();
   loadOverview();
   loadRecommendationAnalysis();
   bindSearchControls();
@@ -52,13 +64,16 @@ function renderYearChart(years) {
     },
     options: {
       responsive: true,
-      maintainAspectRatio: false
+      maintainAspectRatio: false,
+      plugins: {
+        datalabels: { display: false }   // ✅ 여기!
+      }
     }
   });
 }
 
 /* =========================================================
-   Recommendation Analysis (v1.5)
+   Recommendation Analysis (v1.6)
 ========================================================= */
 
 async function loadRecommendationAnalysis() {
@@ -71,6 +86,18 @@ async function loadRecommendationAnalysis() {
 
   if (data.ranker_comparison) {
     renderRankerComparison(data.ranker_comparison);
+  }
+
+  // ✅ ab_meta 표시 (스샷/재현성)
+  const metaEl = document.getElementById("abMeta");
+  if (metaEl) {
+    if (data.ab_meta) {
+      const m = data.ab_meta;
+      metaEl.textContent =
+        `sessions=${m.n_sessions} | top_k=${m.top_k} | sort=${m.sort} | candidate_k=${m.candidate_k}`;
+    } else {
+      metaEl.textContent = "";
+    }
   }
 }
 
@@ -97,16 +124,41 @@ function renderRankerComparison(rankerData) {
   const ctx = document.getElementById("rankerComparisonChart");
   if (!ctx) return;
 
-  const engines = Object.keys(rankerData);
-  const offVals = engines.map(e => rankerData[e].off);
-  const onVals = engines.map(e => rankerData[e].on);
+  const labels = Object.keys(rankerData);
+  const offVals = labels.map(e => Number(rankerData[e]?.off ?? 0));
+  const onVals = labels.map(e => Number(rankerData[e]?.on ?? 0));
 
   if (rankerComparisonChart) rankerComparisonChart.destroy();
+
+  // ✅ Tooltip에 Δ(ON - OFF) 표시
+  const tooltipCallbacks = {
+    callbacks: {
+      afterBody: (tooltipItems) => {
+        const item = tooltipItems?.[0];
+        if (!item) return "";
+
+        const idx = item.dataIndex;
+        const chart = item.chart;
+
+        const dsOff = chart.data.datasets.find(d => d.label === "Ranker OFF");
+        const dsOn = chart.data.datasets.find(d => d.label === "Ranker ON");
+
+        const off = Number(dsOff?.data?.[idx] ?? 0);
+        const on = Number(dsOn?.data?.[idx] ?? 0);
+
+        const delta = on - off;
+        const sign = delta >= 0 ? "+" : "";
+        return `Δ (ON - OFF): ${sign}${delta.toFixed(3)}`;
+      }
+    }
+  };
+
+  const hasDatalabels = !!(window.ChartDataLabels);
 
   rankerComparisonChart = new Chart(ctx, {
     type: "bar",
     data: {
-      labels: engines,
+      labels,
       datasets: [
         { label: "Ranker OFF", data: offVals },
         { label: "Ranker ON", data: onVals }
@@ -114,9 +166,30 @@ function renderRankerComparison(rankerData) {
     },
     options: {
       responsive: true,
-      maintainAspectRatio: false
+      maintainAspectRatio: false,
+      plugins: {
+        tooltip: tooltipCallbacks,
+        // ✅ 막대 위에 값 표시(스샷용). plugin이 있을 때만 동작
+        datalabels: hasDatalabels ? {
+          anchor: "end",
+          align: "end",
+          formatter: (value) => Number(value).toFixed(2)
+        } : undefined
+      }
     }
   });
+
+  // ✅ 항상 보이는 Δ 요약(스샷용) — 반드시 함수 내부에 있어야 engines/offVals/onVals 사용 가능
+  const deltaEl = document.getElementById("abDeltaSummary");
+  if (deltaEl) {
+    const deltas = labels.map((_, i) => onVals[i] - offVals[i]);
+    const pos = deltas.filter(d => d > 0).length;
+    const neg = deltas.filter(d => d < 0).length;
+    const avgDelta = deltas.length ? (deltas.reduce((a,b)=>a+b,0) / deltas.length) : 0;
+    const sign = avgDelta >= 0 ? "+" : "";
+
+
+  }
 }
 
 /* =========================================================
@@ -136,11 +209,12 @@ function bindSearchControls() {
 ========================================================= */
 
 async function onTextSearch() {
-  const query = document.getElementById("text-query-input").value.trim();
+  const query = document.getElementById("text-query-input")?.value?.trim();
   if (!query) return;
 
   setEngineStatus("panel-tfidf", "Searching...");
   setEngineStatus("panel-sbert", "Searching...");
+  // CLIP은 텍스트 검색과 무관하므로 그대로 둠
 
   const res = await fetch("/api/dashboard/engine_comparison/text", {
     method: "POST",
@@ -150,8 +224,17 @@ async function onTextSearch() {
 
   const data = await res.json();
 
-  renderEngineResults("panel-tfidf", data.results?.["TF-IDF"]);
-  renderEngineResults("panel-sbert", data.results?.["SBERT"]);
+  const tfidf = data.results?.["TF-IDF"] || [];
+  const sbert = data.results?.["SBERT"] || [];
+
+  // ✅ Overlap(교집합) 하이라이트
+  const tfidfIds = toIdSet(tfidf);
+  const sbertIds = toIdSet(sbert);
+  const overlapIds = intersection(tfidfIds, sbertIds);
+
+  // ✅ 점수 bar 렌더링(패널 내부 max 기준)
+  renderEngineResults("panel-tfidf", tfidf, { highlightIds: overlapIds });
+  renderEngineResults("panel-sbert", sbert, { highlightIds: overlapIds });
 }
 
 /* =========================================================
@@ -160,7 +243,7 @@ async function onTextSearch() {
 
 async function onImageSearch() {
   const input = document.getElementById("image-query-input");
-  if (!input.files.length) return;
+  if (!input?.files?.length) return;
 
   setEngineStatus("panel-clip", "Searching...");
 
@@ -173,14 +256,16 @@ async function onImageSearch() {
   });
 
   const data = await res.json();
-  renderEngineResults("panel-clip", data.results);
+
+  // 이미지 검색은 현재 CLIP 단독이므로 overlap 하이라이트는 적용하지 않음
+  renderEngineResults("panel-clip", data.results || [], { highlightIds: new Set() });
 }
 
 /* =========================================================
-   🔑 Engine Result Rendering (4개 구조 시절 UI 복원)
+   🔑 Engine Result Rendering (4개 구조 시절 UI 복원 + Bar + Overlap)
 ========================================================= */
 
-function renderEngineResults(panelId, results) {
+function renderEngineResults(panelId, results, { highlightIds = new Set() } = {}) {
   const panel = document.getElementById(panelId);
   if (!panel) return;
 
@@ -188,25 +273,51 @@ function renderEngineResults(panelId, results) {
   const statusBox = panel.querySelector(".mf-engine-status");
 
   if (statusBox) statusBox.textContent = "";
-  resultsBox.innerHTML = "";
+  if (resultsBox) resultsBox.innerHTML = "";
 
   if (!results || results.length === 0) {
-    statusBox.textContent = "No results";
+    if (statusBox) statusBox.textContent = "No results";
     return;
   }
 
-  results.slice(0, 5).forEach((item, idx) => {
-    const row = document.createElement("div");
+  const items = results.slice(0, 5);
 
-    /* 🔴 중요:
-       이 클래스가 기존 CSS의
-       회색 박스 / padding / 폰트 규칙을 담당 */
+  if (statusBox) statusBox.textContent = `Top ${items.length}`;
+
+  // 패널 내부 상대 스케일: maxScore 기준으로 bar 비율 계산
+  const maxScore = Math.max(...items.map(x => Number(x?.score) || 0), 0) || 1;
+
+  items.forEach((item, idx) => {
+    const title = item?.title ?? "Unknown";
+    const score = Number(item?.score) || 0;
+    const movieId = item?.movie_id != null ? String(item.movie_id) : "";
+
+    const pct = Math.max(0, Math.min(100, (score / maxScore) * 100));
+
+    const ratio = score / maxScore;
+    let scoreClass = "score-low";
+    if (ratio >= 0.66) scoreClass = "score-high";
+    else if (ratio >= 0.33) scoreClass = "score-mid";
+
+    const row = document.createElement("div");
     row.className = "mf-engine-item";
 
-    row.textContent =
-      `${idx + 1}. ${item.title} (${item.score.toFixed(3)})`;
+    // ✅ overlap 강조
+    if (movieId && highlightIds.has(movieId)) {
+      row.classList.add("is-overlap");
+    }
 
-    resultsBox.appendChild(row);
+    row.innerHTML = `
+      <div class="mf-engine-item-top">
+        <div class="mf-engine-item-title">${idx + 1}. ${escapeHtml(title)}</div>
+        <div class="mf-engine-item-score">${score.toFixed(3)}</div>
+      </div>
+      <div class="mf-engine-bar">
+        <div class="mf-engine-bar-fill ${scoreClass}" style="width:${pct}%"></div>
+      </div>
+    `;
+
+    resultsBox?.appendChild(row);
   });
 }
 
@@ -229,4 +340,23 @@ function setText(id, val, fmt) {
   const el = document.getElementById(id);
   if (!el) return;
   el.textContent = val != null ? fmt(val) : "–";
+}
+
+function escapeHtml(s) {
+  return String(s ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function toIdSet(items) {
+  return new Set((items || []).map(x => String(x?.movie_id ?? "")).filter(Boolean));
+}
+
+function intersection(a, b) {
+  const out = new Set();
+  for (const v of a) if (b.has(v)) out.add(v);
+  return out;
 }

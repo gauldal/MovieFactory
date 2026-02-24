@@ -280,6 +280,27 @@ a:active {
   text-decoration: none;
 }
 
+/* ✅ BOTTOM BAR: center footer text in one line */
+.mf-bottom-center{
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+
+  font-size: 12px;
+  color: #888;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 16px;
+}
+
+/* 기존 footer는 한 줄로 합쳤으니 숨김 */
+.footer-dashboard{
+  display: none;
+}
 /* ======================================================
    BOTTOM STICKY BAR (FOOTER ABOVE)
 ====================================================== */

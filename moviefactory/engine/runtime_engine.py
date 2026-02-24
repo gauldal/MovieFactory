@@ -1,8 +1,8 @@
 # ============================================================
 # moviefactory/engine/runtime_engine.py
 # - Image Search: CLIP candidates + prompt-derived pseudo_query + SBERT + RRF fusion
-# - Tuned: stronger SBERT in top ranks + limit rank pool to reduce noise
-# - Text Search: TF-IDF + SBERT hybrid + (NEW) Title Boost safety for exact-title queries
+# - Tuned: SBERT restricted to CLIP rank pool to reduce noise
+# - Text Search: TF-IDF + SBERT hybrid + Title Boost safety for exact-title queries
 # ============================================================
 
 from __future__ import annotations
@@ -183,6 +183,132 @@ class RuntimeEngine:
             self._genres_cache = {}
 
     # ==================================================
+    # DASHBOARD — Engine Comparison (Query Similarity)
+    # ==================================================
+    def get_query_tfidf_similarity(
+        self,
+        query: str,
+        *,
+        top_k: int = 5,
+        min_score: float = 0.0,
+    ) -> List[Dict]:
+        """
+        TF-IDF query-based similarity (Dashboard/Engine Comparison)
+        Returns: List[{rank, movie_id, title, score}]
+        """
+        q = _normalize_space(query or "")
+        if not q:
+            return []
+
+        scores = tfidf_engine.score(q, top_k=700, min_score=min_score) or {}
+        if not scores:
+            return []
+
+        ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
+
+        # 빠른 title lookup
+        title_map = dict(zip(self.df["movie_id"], self.df["title"]))
+
+        out: List[Dict] = []
+        for i, (mid, sc) in enumerate(ranked, start=1):
+            try:
+                mid_int = int(mid)
+            except Exception:
+                continue
+            out.append(
+                {
+                    "rank": i,
+                    "movie_id": mid_int,
+                    "title": title_map.get(mid_int, "Unknown"),
+                    "score": round(float(sc), 4),
+                }
+            )
+        return out
+
+    def get_query_sbert_similarity(
+        self,
+        query: str,
+        *,
+        top_k: int = 5,
+        min_score: float = 0.10,
+    ) -> List[Dict]:
+        """
+        SBERT query-based similarity (Dashboard/Engine Comparison)
+        Returns: List[{rank, movie_id, title, score}]
+        """
+        q = _normalize_space(query or "")
+        if not q:
+            return []
+
+        scores = sbert_engine.score(q, top_k=700, min_score=min_score) or {}
+        if not scores:
+            return []
+
+        ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
+
+        title_map = dict(zip(self.df["movie_id"], self.df["title"]))
+
+        out: List[Dict] = []
+        for i, (mid, sc) in enumerate(ranked, start=1):
+            try:
+                mid_int = int(mid)
+            except Exception:
+                continue
+            out.append(
+                {
+                    "rank": i,
+                    "movie_id": mid_int,
+                    "title": title_map.get(mid_int, "Unknown"),
+                    "score": round(float(sc), 4),
+                }
+            )
+        return out
+
+    def get_image_clip_similarity(
+        self,
+        image_path: str,
+        *,
+        top_k: int = 5,
+        min_score: float = -1.0,
+    ) -> List[Dict]:
+        """
+        Dashboard용: CLIP image-query cosine similarity를 직접 반환한다.
+        Returns: List[{rank, movie_id, title, score}]
+        """
+        if not image_path:
+            return []
+
+        # ✅ runtime_engine.search_hybrid(image)에서 이미 사용 중인 원본 CLIP 점수 API
+        clip_scores = clip_engine.score(
+            image_path,
+            top_k=None,          # 전체 점수 받되
+            min_score=min_score, # 필터는 최소로
+        )
+        if not clip_scores:
+            return []
+
+        ranked = sorted(clip_scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
+
+        title_map = dict(zip(self.df["movie_id"], self.df["title"]))
+
+        out: List[Dict] = []
+        for i, (mid, sc) in enumerate(ranked, start=1):
+            try:
+                mid_int = int(mid)
+            except Exception:
+                continue
+
+            out.append(
+                {
+                    "rank": i,
+                    "movie_id": mid_int,
+                    "title": title_map.get(mid_int, "Unknown"),
+                    "score": round(float(sc), 4),  # ✅ 이제 0.1234 같은 “원본 similarity”가 나옴
+                }
+            )
+        return out
+
+    # ==================================================
     # SORT
     # ==================================================
     def _apply_sort(self, df: pd.DataFrame, sort: str) -> pd.DataFrame:
@@ -298,9 +424,53 @@ class RuntimeEngine:
             movie_id = int(movie_id)
         except Exception:
             return []
-        df = self.df[self.df["movie_id"] != movie_id]
-        df = df.sort_values("popularity", ascending=False)
-        return [self._row_to_card(r) for _, r in df.head(limit).iterrows()]
+
+        # 기준 영화
+        base_row = self.df[self.df["movie_id"] == movie_id]
+        if base_row.empty:
+            return []
+
+        base_genres = self._genres_cache.get(movie_id, [])
+        if not base_genres:
+            # 장르 없으면 fallback → 인기순
+            df = self.df[self.df["movie_id"] != movie_id]
+            df = df.sort_values("popularity", ascending=False)
+            return [self._row_to_card(r) for _, r in df.head(limit).iterrows()]
+
+        candidates = []
+
+        for _, row in self.df.iterrows():
+            mid = int(row["movie_id"])
+            if mid == movie_id:
+                continue
+
+            genres = self._genres_cache.get(mid, [])
+            if not genres:
+                continue
+
+            # 장르 교집합 점수
+            intersection = len(set(base_genres) & set(genres))
+            if intersection == 0:
+                continue
+
+            # 최종 점수 = (장르 일치 개수 * 10) + popularity 가중치
+            popularity = float(row.get("popularity", 0.0))
+            score = (intersection * 10.0) + (popularity * 0.01)
+
+            candidates.append((score, row))
+
+        if not candidates:
+            # fallback
+            df = self.df[self.df["movie_id"] != movie_id]
+            df = df.sort_values("popularity", ascending=False)
+            return [self._row_to_card(r) for _, r in df.head(limit).iterrows()]
+
+        # 점수 기준 정렬
+        candidates.sort(key=lambda x: x[0], reverse=True)
+
+        top_rows = [r for _, r in candidates[:limit]]
+        return [self._row_to_card(r) for r in top_rows]
+
 
     # ==================================================
     # SEARCH
@@ -361,28 +531,14 @@ class RuntimeEngine:
         # IMAGE SEARCH (TUNED RRF)
         # ------------------------------
         if search_type == "image" and image_path:
-            # 1) CLIP 점수: 전체 대상(2234) 비교
+            # 1) CLIP 점수: 전체 대상 비교
             clip_scores = clip_engine.score(
                 image_path,
                 top_k=None,
                 min_score=-1.0,
             )
             if not clip_scores:
-                print("[IMG-RRF] clip_scores=0 (no candidates)")
                 return []
-
-            # (디버그) CLIP 전체에서 155 순위
-            try:
-                target_id = 155
-                clip_sorted_all = sorted(clip_scores.items(), key=lambda x: x[1], reverse=True)
-                clip_rank_155 = None
-                for i, (mid, _) in enumerate(clip_sorted_all, start=1):
-                    if int(mid) == target_id:
-                        clip_rank_155 = i
-                        break
-                print(f"[IMG-RRF][CLIP-RANK] total={len(clip_scores)} movie_id=155 rank={clip_rank_155}")
-            except Exception as e:
-                print("[IMG-RRF][CLIP-RANK] failed:", e)
 
             # 2) prompt 기반 pseudo_query 만들기
             prompts = [
@@ -400,25 +556,27 @@ class RuntimeEngine:
             top_prompts = sorted(prompt_scores.items(), key=lambda x: x[1], reverse=True)[:6]
             pseudo_query = " ".join([p for p, s in top_prompts if s > 0]).strip()
 
-            # 3) SBERT 의미 점수 (전체 -> clip 후보로 restrict)
+            # 3) SBERT 의미 점수 (전체 -> CLIP 상위 pool로 restrict)
+            CLIP_RANK_POOL = 600
+
             if pseudo_query:
                 sbert_all = sbert_engine.score(pseudo_query)
-                candidate_set = set(clip_scores.keys())
-                sbert_scores = {mid: sc for mid, sc in sbert_all.items() if mid in candidate_set}
+
+                clip_sorted_for_sbert = sorted(
+                    clip_scores.items(),
+                    key=lambda x: x[1],
+                    reverse=True
+                )[:CLIP_RANK_POOL]
+                candidate_set = {int(mid) for mid, _ in clip_sorted_for_sbert}
+
+                sbert_scores = {mid: sc for mid, sc in sbert_all.items() if int(mid) in candidate_set}
             else:
                 sbert_scores = {}
-
-            print(
-                "[IMG-RRF] pseudo_query=", pseudo_query,
-                "| candidates=", len(clip_scores),
-                "| sbert_scores=", len(sbert_scores),
-                "| top_prompts=", top_prompts
-            )
 
             # 4) RRF (순위 기반 결합) - 튜닝값
             k = 40
             w_clip = 1.0
-            w_sbert = 1.4
+            w_sbert = 0.9
 
             # ✅ RRF 대상 풀 = (CLIP 상위 pool) ∪ (SBERT 상위 pool)
             CLIP_RANK_POOL = 600
@@ -452,41 +610,44 @@ class RuntimeEngine:
 
             fused.sort(key=lambda x: x[1], reverse=True)
 
-            # 결과 컷 정책 (RRF 전용: 순위 기반)
+            # 결과 컷 정책 (RRF 전용: anchor 기반 동적 컷)
             MAX_RESULTS = 600
             MIN_RESULTS = 120
 
-            fused = fused[:MAX_RESULTS]
-
-            clip_best = 0.0
             try:
                 clip_best = float(max(clip_scores.values())) if clip_scores else 0.0
             except Exception:
                 clip_best = 0.0
 
+            # 먼저 상한 적용
+            fused = fused[:MAX_RESULTS]
+
             if clip_best < 0.55:
                 fused = fused[:MIN_RESULTS]
+            else:
+                # ✅ anchor: 상위 N번째 점수를 기준으로 threshold를 잡으면 분포가 흔들려도 안정적
+                # 목표: 강한 입력에서 보통 200~350 사이로 자연스럽게 떨어지게
+                TARGET_ANCHOR = 220  # 180~280 사이에서 취향/UX에 맞게 조절
 
-            print(f"[IMG-RRF][CUT] clip_best={clip_best:.4f} kept={len(fused)}")
+                if not fused:
+                    fused = []
+                else:
+                    anchor_idx = min(len(fused) - 1, max(MIN_RESULTS - 1, TARGET_ANCHOR - 1))
+                    anchor_score = fused[anchor_idx][1]
 
-            # DEBUG: RRF 결과 Top20 + movie_id=155 랭크
-            try:
-                target_id = 155
-                target_rank = None
-                for i, (mid, _) in enumerate(fused, start=1):
-                    if int(mid) == target_id:
-                        target_rank = i
-                        break
-                print(f"[IMG-RRF][TARGET] movie_id={target_id} rank={target_rank} (in fused)")
+                    # anchor 대비 비율 아래는 컷 (0.60~0.85 튜닝)
+                    # 값이 낮을수록 더 많이 남음(=결과가 커짐)
+                    anchor_ratio = 0.70
+                    threshold = anchor_score * anchor_ratio
 
-                for rank, (mid, sc) in enumerate(fused[:20], start=1):
-                    row = self.df[self.df["movie_id"] == int(mid)]
-                    title = ""
-                    if not row.empty:
-                        title = str(row.iloc[0].get("title", ""))
-                    print(f"[IMG-RRF][TOP20] {rank:02d} movie_id={int(mid)} score={float(sc):.6f} title={title}")
-            except Exception as e:
-                print("[IMG-RRF][DEBUG] failed:", e)
+                    filtered = [(mid, sc) for (mid, sc) in fused if sc >= threshold]
+
+                    # 하한 보장 (너무 줄면 MIN 유지)
+                    if len(filtered) < MIN_RESULTS:
+                        filtered = fused[:MIN_RESULTS]
+
+                    fused = filtered
+
 
             # 카드 변환 (점수는 UI 미노출)
             movies: list[dict] = []

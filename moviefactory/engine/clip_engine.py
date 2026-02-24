@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+
 import numpy as np
 import torch
 import clip
@@ -75,26 +77,46 @@ class CLIPScorer:
 
         try:
             self.metadata = load_metadata() or {}
-            self.embeddings = load_clip_embeddings()
 
-            if self.embeddings is None:
-                raise RuntimeError("CLIP embeddings missing")
-            if "movie_ids" not in self.metadata:
-                raise RuntimeError("metadata.json missing 'movie_ids'")
+            # ✅ 1) clip_embeddings.npz를 우선 사용 (npz 안의 movie_ids가 "진짜 매핑 키")
+            #    경로: moviefactory/.cache/full_working/clip/clip_embeddings.npz
+            base_dir = os.path.dirname(os.path.dirname(__file__))  # moviefactory/
+            npz_path = os.path.join(base_dir, ".cache", "full_working", "clip", "clip_embeddings.npz")
 
-            self.movie_ids = [int(x) for x in self.metadata["movie_ids"]]
+            embeddings = None
+            movie_ids = None
 
-            # 길이 불일치 방어
+            if os.path.exists(npz_path):
+                z = np.load(npz_path)
+                if "embeddings" not in z.files or "movie_ids" not in z.files:
+                    raise RuntimeError(f"Invalid npz format: {npz_path} (need embeddings + movie_ids)")
+
+                embeddings = z["embeddings"]
+                movie_ids = z["movie_ids"].tolist()
+            else:
+                # ✅ 2) fallback: 기존 로더 사용 (하지만 이 경우도 movie_ids 매핑은 매우 위험)
+                embeddings = load_clip_embeddings()
+                if embeddings is None:
+                    raise RuntimeError("CLIP embeddings missing")
+
+                if "movie_ids" not in self.metadata:
+                    raise RuntimeError("metadata.json missing 'movie_ids'")
+                movie_ids = self.metadata["movie_ids"]
+
+            self.embeddings = np.asarray(embeddings, dtype=np.float32)
+            self.movie_ids = [int(x) for x in movie_ids]
+
+            # ✅ 길이 불일치는 '자르기' 금지 (자르면 매핑이 틀어진 채로 굳어짐)
             n_emb = int(self.embeddings.shape[0])
             n_ids = int(len(self.movie_ids))
-            n = min(n_emb, n_ids)
-            if n == 0:
+            if n_emb == 0 or n_ids == 0:
                 raise RuntimeError("CLIP assets empty")
 
             if n_emb != n_ids:
-                print(f"[CLIP] WARNING: length mismatch (embeddings={n_emb}, movie_ids={n_ids}) -> using n={n}")
-                self.embeddings = self.embeddings[:n]
-                self.movie_ids = self.movie_ids[:n]
+                raise RuntimeError(
+                    f"CLIP mapping mismatch: embeddings={n_emb}, movie_ids={n_ids}. "
+                    f"Delete and rebuild CLIP cache (npz/metadata)."
+                )
 
             # row normalize (cosine 안정화)
             denom = np.linalg.norm(self.embeddings, axis=1, keepdims=True) + 1e-9
@@ -102,6 +124,8 @@ class CLIPScorer:
 
             self.encoder = CLIPEngine()
             self.is_ready = True
+
+            print(f"[CLIP] ready: n={n_emb} source={'npz' if os.path.exists(npz_path) else 'legacy'}")
 
         except Exception as e:
             print("[CLIP] scorer disabled:", e)

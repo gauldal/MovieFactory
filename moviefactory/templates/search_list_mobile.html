@@ -2,9 +2,6 @@
 
 {% block content %}
 
-<!-- =========================
-     MOBILE SEARCH HERO
-========================= -->
 <section class="m-search-hero">
 
   {% if image_mode and search_image_preview %}
@@ -16,9 +13,9 @@
 
   <div class="m-search-query">
     {% if q %}
-      <h2>“{{ q }}” 검색 결과</h2>
+      <h2>Results for [{{ q }}]</h2>
     {% elif genre %}
-      <h2>{{ genre }} 장르</h2>
+      <h2>{{ genre }} Movies</h2>
     {% else %}
       <h2>Search Results</h2>
     {% endif %}
@@ -27,92 +24,66 @@
 
 </section>
 
-<!-- =========================
-     MOVIE GRID
-========================= -->
 <section class="m-search-results">
 
   {% if movies %}
   <div class="m-movie-grid">
     {% for movie in movies %}
     <a href="/movie/{{ movie.movie_id }}" class="m-movie-card">
-
       <img
         src="{{ movie.poster_url }}"
         alt="{{ movie.title }}"
         loading="lazy"
       >
-
       <div class="m-movie-meta">
-        <div class="m-movie-title">
-          {{ movie.title }}
-        </div>
-
+        <div class="m-movie-title">{{ movie.title }}</div>
         {% if movie.vote_average %}
-        <div class="m-movie-rating">
-          ⭐ {{ "%.1f"|format(movie.vote_average) }}
-        </div>
+        <div class="m-movie-rating">⭐ {{ "%.1f"|format(movie.vote_average) }}</div>
         {% endif %}
       </div>
-
     </a>
     {% endfor %}
   </div>
   {% else %}
-    <div class="m-empty">
-      검색 결과가 없습니다.
-    </div>
+    <div class="m-empty">No results found</div>
   {% endif %}
 
 </section>
 
-<!-- =========================
-     MOBILE PAGINATION
-     (텍스트 / 장르만)
-========================= -->
-{% if total_pages > 1 and not image_mode %}
-<nav class="m-pagination">
-
-  {% if page > 1 %}
-    {% if q %}
-      <a
-        class="m-page-btn"
-        href="{{ url_for('search.search') }}?q={{ q }}&sort={{ sort }}&page={{ page - 1 }}"
-      >
-        ← 이전
-      </a>
-    {% elif genre %}
-      <a
-        class="m-page-btn"
-        href="{{ url_for('search.search') }}?genre={{ genre }}&sort={{ sort }}&page={{ page - 1 }}"
-      >
-        ← 이전
-      </a>
+{# ✅ 이미지 검색 포함: total_pages > 1 이면 항상 페이지네이션 노출 #}
+{% if total_pages > 1 %}
+<nav class="m-pagination m-pagination-split">
+  {# ---------- prev ---------- #}
+  <div class="m-page-slot m-page-left">
+    {% if page > 1 %}
+      {% if q %}
+        <a class="m-page-btn" href="{{ url_for('search.search') }}?q={{ q }}&sort={{ sort }}&page={{ page - 1 }}">← Previous</a>
+      {% elif genre %}
+        <a class="m-page-btn" href="{{ url_for('search.search') }}?genre={{ genre }}&sort={{ sort }}&page={{ page - 1 }}">← Previous</a>
+      {% elif image_mode %}
+        {# ✅ 이미지 검색(GET session) 페이지 이동은 page/sort만으로 충분 #}
+        <a class="m-page-btn" href="{{ url_for('search.search') }}?sort={{ sort }}&page={{ page - 1 }}">← Previous</a>
+      {% endif %}
     {% endif %}
-  {% endif %}
+  </div>
 
-  <span class="m-page-info">
-    {{ page }} / {{ total_pages }}
-  </span>
+  {# ---------- center ---------- #}
+  <div class="m-page-slot m-page-center">
+    <span class="m-page-info">{{ page }} / {{ total_pages }}</span>
+  </div>
 
-  {% if page < total_pages %}
-    {% if q %}
-      <a
-        class="m-page-btn"
-        href="{{ url_for('search.search') }}?q={{ q }}&sort={{ sort }}&page={{ page + 1 }}"
-      >
-        다음 →
-      </a>
-    {% elif genre %}
-      <a
-        class="m-page-btn"
-        href="{{ url_for('search.search') }}?genre={{ genre }}&sort={{ sort }}&page={{ page + 1 }}"
-      >
-        다음 →
-      </a>
+  {# ---------- next ---------- #}
+  <div class="m-page-slot m-page-right">
+    {% if page < total_pages %}
+      {% if q %}
+        <a class="m-page-btn" href="{{ url_for('search.search') }}?q={{ q }}&sort={{ sort }}&page={{ page + 1 }}">Next →</a>
+      {% elif genre %}
+        <a class="m-page-btn" href="{{ url_for('search.search') }}?genre={{ genre }}&sort={{ sort }}&page={{ page + 1 }}">Next →</a>
+      {% elif image_mode %}
+        <a class="m-page-btn" href="{{ url_for('search.search') }}?sort={{ sort }}&page={{ page + 1 }}">Next →</a>
+      {% endif %}
     {% endif %}
-  {% endif %}
-
+  </div>
 </nav>
 {% endif %}
 

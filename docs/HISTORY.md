@@ -45,37 +45,201 @@ Phase 7. 최종 정리 단계
 
 \- 현상:
 
-&nbsp; - CLIP 단독 기반 이미지 검색에서 특정 영화(예: Don Juan DeMarco)가 반복적으로 상위권에 고정되고,
+  - CLIP 단독 기반 이미지 검색에서 특정 영화(예: Don Juan DeMarco)가 반복적으로 상위권에 고정되고,
 
-&nbsp;   업로드한 포스터(다크나이트)가 상위에 노출되지 않거나 매우 낮은 순위로 나오는 문제가 발생.
+    업로드한 포스터(다크나이트)가 상위에 노출되지 않거나 매우 낮은 순위로 나오는 문제가 발생.
 
-&nbsp; - 디버그 결과: movie\_id=155(The Dark Knight)가 CLIP 전체 2234 기준 약 1213위로 확인됨.
+  - 디버그 결과: movie\_id=155(The Dark Knight)가 CLIP 전체 2234 기준 약 1213위로 확인됨.
 
 
 
 \- 조치/개선:
 
-&nbsp; 1) CLIP 결과 + SBERT 의미 결과를 “가중합” 대신 “RRF(순위 결합)”으로 변경
+  1) CLIP 결과 + SBERT 의미 결과를 “가중합” 대신 “RRF(순위 결합)”으로 변경
 
-&nbsp;    - 목적: CLIP outlier의 상위 고정을 완화하고 SBERT의 의미 신호를 상위에 반영.
+     - 목적: CLIP outlier의 상위 고정을 완화하고 SBERT의 의미 신호를 상위에 반영.
 
-&nbsp; 2) RRF는 점수 절대값이 작아 “best\*ratio” 컷을 적용하면 결과가 과도하게 줄어드는 문제 확인
+  2) RRF는 점수 절대값이 작아 “best\*ratio” 컷을 적용하면 결과가 과도하게 줄어드는 문제 확인
 
-&nbsp;    - 해결: RRF 결과 컷은 “순위 기반”으로 전환 (MAX\_RESULTS/ MIN\_RESULTS)
+     - 해결: RRF 결과 컷은 “순위 기반”으로 전환 (MAX\_RESULTS/ MIN\_RESULTS)
 
-&nbsp; 3) CLIP 상위 pool만 사용할 경우(예: 600) CLIP 중위권 영화(155)가 후보에서 제외되어 사라지는 문제 확인
+  3) CLIP 상위 pool만 사용할 경우(예: 600) CLIP 중위권 영화(155)가 후보에서 제외되어 사라지는 문제 확인
 
-&nbsp;    - 해결: RRF 대상 풀을 (CLIP 상위 pool) ∪ (SBERT 상위 pool) 합집합으로 구성
+     - 해결: RRF 대상 풀을 (CLIP 상위 pool) ∪ (SBERT 상위 pool) 합집합으로 구성
 
 
 
 \- 결과(검증 로그):
 
-&nbsp; - pseudo\_query: "batman vigilante superhero dark city crime"
+  - pseudo\_query: "batman vigilante superhero dark city crime"
 
-&nbsp; - clip\_best=0.9731, kept=600
+  - clip\_best=0.9731, kept=600
 
-&nbsp; - movie\_id=155 최종 fused rank=2로 상위권 복귀
+  - movie\_id=155 최종 fused rank=2로 상위권 복귀
 
 
+
+1\. SBERT/TF-IDF 하이브리드 검색 엔진 구성
+
+2\. text\_queries.yaml → text\_queries\_intent.yaml 확장
+
+3\. run\_text\_eval.py 10줄 보강
+
+4\. 회귀 체크 모듈 regression\_check.py 구현
+
+5\. baseline.json 생성
+
+6\. check\_regression.bat 원클릭 자동화
+
+7\. GitHub 레포 강제 초기화 및 새 구조로 푸시
+
+8\. GitHub Actions regression.yml 추가
+
+9\. CI를 check\_regression.bat 기반으로 통일
+
+10\. intent 쿼리 안정형 재작성 (title anchor 전략 도입)
+
+11\. hit@1/5/10 = 1.000 안정화
+
+12\. regression PASS 확인
+
+
+
+\# Development History – 2026-02-12
+
+
+
+---
+
+
+
+\## 1. CLIP 정확도 이슈 발견
+
+\- target\_id 순위 불안정
+
+\- metadata / embedding mismatch 점검
+
+\- metadata.json 중복 없음 확인
+
+\- clip\_engine.py 재정비
+
+
+
+---
+
+
+
+\## 2. RRF 디버깅
+
+\- clip\_rank 확인
+
+\- sbert\_rank 확인
+
+\- fused rank 로그 추가
+
+\- TARGET movie rank 출력
+
+
+
+---
+
+
+
+\## 3. 디버그 로그 제거
+
+\- 운영 모드 전환
+
+\- print 제거
+
+\- DEBUG 블록 삭제
+
+
+
+---
+
+
+
+\## 4. 모바일 상세 개선
+
+\- Explain 버튼 추가
+
+\- explain.js 연결
+
+\- aria 접근성 적용
+
+
+
+---
+
+
+
+\## 5. 트레일러 개수 수정 실패 원인 분석
+
+\- movie\_api.py 수정했으나 반영 안 됨
+
+\- 실제 라우트는 main.py에서 제어 확인
+
+\- 중복 trailer 호출 발견
+
+\- main.py 정리
+
+
+
+---
+
+
+
+\## 6. 모바일 레이아웃 이슈
+
+\- 햄버거 버튼 미작동
+
+\- grid 1열 출력 문제
+
+\- mobile.css 재정비
+
+
+
+---
+
+
+
+\## 7. 최종 상태
+
+\- 이미지 검색 3회 정상 동작
+
+\- 고해상도 이미지 처리 안정
+
+\- 모바일 2열 정상
+
+\- Trailer 4 / Similar 6 적용 완료
+
+\- Explain 기능 정상 작동
+
+[CHANGE HISTORY — v1.1 → v1.3]
+
+v1.1
+- 기본 Hybrid Engine 구성
+- TF-IDF / SBERT / CLIP 통합
+
+v1.2
+- Dashboard 추가
+- Engine Comparison 병렬 UI 구성
+- Dataset Overview 카드 도입
+
+v1.2.5
+- Image Search 과다 노출 문제 발견 (600개)
+- best_score * ratio 임시 패치
+
+v1.3
+- anchor 기준 컷 안정화
+- CLIP score 정규화 적용
+- Engine bar 시각화 도입
+- overlap highlight 적용
+- Search Controls 50:50 grid 정리
+- Release Year chart 고정 높이 설정
+- Mobile 장르 패널 구조 안정화
+- border 제거 후 scroll 고정 문제 해결
+- Hero 문구 sort 기반 분기 적용
+- Footer 2줄 → 1줄 통합
+- footer-dashboard 제거 (mf-bottom-bar 통합)
 

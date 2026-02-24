@@ -38,8 +38,8 @@ class MockLLMClient:
         설명 품질이 아닌 '흐름 검증'이 목적이다.
         """
         return (
-            "이 영화는 사용자의 검색 의도와 주제적으로 잘 맞는 요소를 가지고 있으며, "
-            "장르와 이야기 전개 측면에서도 유사한 특징을 보여 추천되었습니다."
+            "This movie was recommended because it aligns well with your search intent and "
+            "shares similar themes, genre elements, and narrative structure."
         )
 
 
@@ -59,8 +59,8 @@ class FallbackLLMClient:
         항상 안전한 기본 설명을 반환한다.
         """
         return (
-            "이 추천은 사용자의 관심 주제와 영화의 주요 특징을 종합적으로 고려하여 "
-            "선택된 결과입니다."
+            "This recommendation was selected based on a comprehensive analysis of your interests and"
+            "the movie’s key characteristics."
         )
 
 

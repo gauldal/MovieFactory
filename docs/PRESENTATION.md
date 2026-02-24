@@ -1,54 +1,80 @@
-# MovieFactory – 프로젝트 요약
-
-## 프로젝트 개요
-
-MovieFactory는 영화 메타데이터를 기반으로
-텍스트 및 이미지 검색을 결합한 영화 검색 서비스를 구현한 프로젝트이다.
-
-단일 원본 데이터로부터
-동일한 코드, 데이터, 캐시를 생성하는 것을 목표로 한다.
+# MovieFactory – Presentation
 
 ---
 
-## 문제 정의
+## 1. 문제 정의
 
-- 대규모 영화 데이터는 검색 성능과 안정성 문제가 발생하기 쉽다
-- 이미지 검색과 텍스트 검색을 함께 제공하는 서비스는 구현 난이도가 높다
-- 실험 코드가 누적되면 재현성과 유지보수가 어려워진다
+Hybrid Ranker는 실제로 추천 품질을 개선하는가?
 
----
-
-## 해결 전략
-
-- 포스터가 존재하는 영화만 서비스 대상으로 제한
-- 단일 기준 데이터셋 사용
-- 캐시 기반 검색 엔진 설계
-- 엔진과 UI 책임 분리
+검색 시스템은 보통 직관적으로 개선하지만,
+정량적 검증 구조는 부족하다.
 
 ---
 
-## 기술 구성
+## 2. 설계 접근
 
-- Backend: Flask
-- Search Engine:
-  - TF-IDF
-  - SBERT
-  - CLIP
-- Data: TMDB 영화 메타데이터
-- Cache: Numpy / NPZ 기반
-- Deployment: Docker
+- 단일 기준 데이터셋 구성
+- 캐시 기반 검색 구조 설계
+- Runtime에서 실험 분기 가능하도록 설계
+- Offline Proxy Metric 기반 A/B 실험 설계
 
 ---
 
-## 결과
+## 3. 시스템 구조
 
-- 웹 / 모바일 환경에서 동일한 검색 결과 제공
-- 텍스트 / 이미지 / 장르 검색 정상 동작
-- 단일 명세 기반 재현 가능 빌드
+Builder → Canonical Dataset → Cache Engines → Runtime → App
+
+실험은 Runtime 레벨에서 분기.
 
 ---
 
-## 프로젝트 의의
+## 4. A/B 실험 설계
 
-본 프로젝트는 실험 중심 개발이 아닌,
-완성된 서비스 기준으로 설계와 구조를 정리한 프로젝트이다.
+OFF:
+TF-IDF only
+
+ON:
+Hybrid Rerank
+
+120 Session Simulation
+
+Top-K = 20
+
+---
+
+## 5. 평가 지표
+
+- Genre Coherence@K
+- Intra-list Diversity@K
+- Popularity(log1p)@K
+- VoteCount(log1p)@K
+- Weighted Rating@K
+
+---
+
+## 6. 결과 분석
+
+Hybrid는:
+
+- Popularity 증가
+- VoteCount 증가
+- Weighted Rating 증가
+
+Trade-off:
+
+- Genre Coherence 감소
+
+즉,
+상업적 추천 품질은 개선되었으나,
+장르 응집도는 일부 감소.
+
+---
+
+## 7. 결론
+
+Hybrid Ranker는
+정량적으로 추천 품질을 개선한다.
+
+본 프로젝트는 단순 구현이 아니라,
+설계 → 실험 → 검증 → 회귀 보호까지 포함한
+구조 중심 시스템이다.

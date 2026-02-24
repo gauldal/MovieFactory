@@ -1,7 +1,7 @@
 # moviefactory/app/main.py
 
 import os
-from flask import Flask, render_template, request, session
+from flask import Flask, render_template, request, session, abort
 
 from moviefactory.engine.engine_provider import get_runtime_engine
 from moviefactory.app.movie_api import (
@@ -25,7 +25,6 @@ app = Flask(
     static_folder=os.path.join(BASE_DIR, "static"),
 )
 
-# 🔑 session 필수 (이미지 검색 상태 유지)
 app.secret_key = os.environ.get(
     "MF_SECRET_KEY",
     "moviefactory-dev-secret"
@@ -49,12 +48,12 @@ runtime_engine = get_runtime_engine()
 # ======================================================
 # Routes
 # ======================================================
+
 @app.route("/")
 def index():
     sort = request.args.get("sort", "latest")
 
-    # ✅ 홈으로 오면 이미지 검색 세션을 정리해서
-    #    "어딜 가든 이미지검색 화면만 보이는" 상태를 방지
+    # 이미지 검색 세션 정리
     session.pop("image_search_path", None)
     session.pop("image_search_preview", None)
 
@@ -81,31 +80,31 @@ def index():
 @app.route("/movie/<int:movie_id>")
 def movie_detail(movie_id):
     movie = runtime_engine.get_movie_by_id(movie_id)
+    if not movie:
+        abort(404)
+
     movie = normalize_movie(movie)
 
-    print("[DETAIL-RAW]", movie_id, movie.get("release_date"), movie.get("runtime"), movie.get("genres"))
-    print("[DETAIL-NORM]", movie_id, movie.get("release_year"), movie.get("runtime_display"), movie.get("genres_display"))
+    is_mobile = is_mobile_request()
 
+    # ✅ 트레일러: 모바일 4개 / 웹 3개
+    trailer_limit = 2 if is_mobile else 3
     trailers = search_youtube_trailers(
         movie.get("title"),
-        max_items=3,
+        max_items=trailer_limit,
     )
 
-
-    trailers = search_youtube_trailers(
-        movie.get("title"),
-        max_items=3,
-    )
-
+    # ✅ 씨밀러: 모바일 6개 / 웹 14개
+    similar_limit = 6 if is_mobile else 14
     similar_movies = runtime_engine.get_similar_movies(
         movie_id,
-        limit=14,
+        limit=similar_limit,
     )
     similar_movies = [normalize_movie(m) for m in similar_movies]
 
     template = (
         "movie_detail_mobile.html"
-        if is_mobile_request()
+        if is_mobile
         else "movie_detail.html"
     )
 
@@ -115,6 +114,7 @@ def movie_detail(movie_id):
         trailers=trailers,
         similar_movies=similar_movies,
     )
+
 
 @app.route("/dashboard")
 def dashboard_page():

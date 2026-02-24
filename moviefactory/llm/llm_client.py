@@ -95,8 +95,8 @@ class LLMClient:
         Provider 미지원 시 기본 응답
         """
         return (
-            "이 영화는 사용자의 검색 의도와 주제적으로 잘 맞는 요소를 가지고 있어 "
-            "추천 결과에 포함되었습니다."
+            "This movie was included in the recommendations"
+            "because it closely matches your search intent and thematic interests."
         )
 
     def _safe_fallback(self, error_message: Optional[str] = None) -> str:
@@ -104,8 +104,8 @@ class LLMClient:
         LLM 실패 시 시스템 안정성을 위한 안전한 기본 설명
         """
         return (
-            "이 영화는 사용자의 검색 의도와 관련된 주제와 장르적 특징을 가지고 있어 "
-            "추천되었습니다."
+            "This movie was recommended due to its relevant themes and"
+            "genre characteristics that align with your search intent."
         )
 
 

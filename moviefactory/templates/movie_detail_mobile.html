@@ -21,22 +21,22 @@
 
   <div class="md-sub">
     {% if movie.release_year %}
-      <p><strong>개봉</strong> {{ movie.release_year }}</p>
+      <p><strong>Release</strong> {{ movie.release_year }}</p>
     {% endif %}
 
     {% if movie.genres_display %}
-      <p><strong>장르</strong> {{ movie.genres_display }}</p>
+      <p><strong>Genre</strong> {{ movie.genres_display }}</p>
     {% endif %}
 
     {% if movie.runtime_display %}
-      <p><strong>러닝타임</strong> {{ movie.runtime_display }}</p>
+      <p><strong>Runtime</strong> {{ movie.runtime_display }}</p>
     {% endif %}
   </div>
 
   {% if movie.rating_display %}
   <div class="md-rating">
     <p>
-      <strong>평점</strong> {{ movie.rating_display }}
+      <strong>Rating</strong> {{ movie.rating_display }}
       {% if movie.vote_count_display %}
         <span class="md-vote-count">({{ movie.vote_count_display }})</span>
       {% endif %}
@@ -45,13 +45,46 @@
   {% endif %}
 </section>
 
+<!-- =========================
+     EXPLAIN (RECOMMENDATION REASON)
+========================= -->
+<section class="md-explain" aria-labelledby="md-explain-title">
+  <div class="md-explain-head">
+    <h2 id="md-explain-title" class="md-explain-title">Why This Movie Was Recommended</h2>
+    <span class="md-explain-badge">AI</span>
+  </div>
 
+  <p class="md-explain-sub">
+    A brief summary of why this movie was recommended.
+  </p>
+
+  <button
+    id="btn-explain"
+    class="md-btn md-btn-outline"
+    type="button"
+    data-movie-id="{{ movie.movie_id }}"
+    data-title="{{ movie.title|e }}"
+    data-year="{{ movie.release_year }}"
+    data-genres="{{ movie.genres_display|default('', true)|e }}"
+    aria-controls="explanation-result"
+    aria-expanded="false"
+  >
+    See Why
+  </button>
+
+  <div
+    id="explanation-result"
+    class="md-explain-box"
+    role="status"
+    aria-live="polite"
+  ></div>
+</section>
 
 <!-- =========================
      ACTIONS
 ========================= -->
 <section class="md-actions">
-  <button class="md-btn">＋ Watchlist</button>
+  <button class="md-btn" type="button">＋ Watchlist</button>
 </section>
 
 <!-- =========================
@@ -105,5 +138,8 @@
   </div>
 </section>
 {% endif %}
+
+<!-- explain.js (상세에서만 1회 로드) -->
+<script src="{{ url_for('static', filename='js/explain.js') }}"></script>
 
 {% endblock %}

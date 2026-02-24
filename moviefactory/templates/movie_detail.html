@@ -35,7 +35,7 @@
 
       <p class="movie-overview">{{ movie.overview }}</p>
 
-      <!-- 추천 설명 -->
+      <!-- Why This Is Recommended -->
       <div class="mf-explanation-inline">
         <button
           id="btn-explain"
@@ -44,7 +44,7 @@
           data-genres="{{ movie.genres_display }}"
           data-year="{{ movie.release_year }}"
         >
-          이 추천에 대한 간단한 설명
+          Brief explanation
         </button>
 
         <div id="explanation-result" class="mf-explanation-box"></div>
@@ -52,17 +52,17 @@
 
       <div class="movie-meta-list">
         {% if movie.genres_display %}
-          <p><strong>장르</strong> {{ movie.genres_display }}</p>
+          <p><strong>Genre</strong> {{ movie.genres_display }}</p>
         {% endif %}
         {% if movie.release_year %}
-          <p><strong>개봉</strong> {{ movie.release_year }}</p>
+          <p><strong>Release</strong> {{ movie.release_year }}</p>
         {% endif %}
         {% if movie.runtime_display %}
-          <p><strong>러닝타임</strong> {{ movie.runtime_display }}</p>
+          <p><strong>Runtime</strong> {{ movie.runtime_display }}</p>
         {% endif %}
         {% if movie.rating_display %}
           <p>
-            <strong>평점</strong> {{ movie.rating_display }}
+            <strong>Rating</strong> {{ movie.rating_display }}
             {% if movie.vote_count_display %}
               ({{ movie.vote_count_display }})
             {% endif %}

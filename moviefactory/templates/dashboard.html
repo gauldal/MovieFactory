@@ -183,6 +183,9 @@
           <div class="mf-dashboard-chart-container">
             <canvas id="rankerComparisonChart"></canvas>
           </div>
+          <!-- ✅ 여기 추가 -->
+          <div id="abMeta" class="mf-muted" style="margin-top:8px;"></div>
+          <div id="abDeltaSummary" class="mf-muted" style="margin-top:6px;"></div>
         </div>
 
       </div>
@@ -192,6 +195,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 
 {% endblock %}

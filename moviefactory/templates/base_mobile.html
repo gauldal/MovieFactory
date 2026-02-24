@@ -5,6 +5,7 @@
   <title>MovieFactory</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <!-- cache bust: 필요하면 뒤에 ?v=1 붙여도 됨 -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/mobile.css') }}">
 </head>
 <body>
@@ -16,7 +17,7 @@
   <div class="m-header-inner">
 
     <!-- Hamburger -->
-    <button class="m-menu-btn" id="gm-open">☰</button>
+    <button class="m-menu-btn" id="gm-open" type="button" aria-label="Open menu">☰</button>
 
     <!-- Logo -->
     <a href="/" class="m-logo">MovieFactory</a>
@@ -31,7 +32,7 @@
 
 <!-- =========================
      GLOBAL SEARCH (MOBILE)
-     🔑 TEXT = GET / IMAGE = POST
+     TEXT = GET / IMAGE = POST (auto submit)
 ========================= -->
 <form
   class="m-search m-search-global"
@@ -41,9 +42,11 @@
 
   <!-- TEXT SEARCH -->
   <input
+    class="m-search-input"
     type="text"
     name="q"
     placeholder="Search for movies..."
+    autocomplete="off"
   >
 
   <!-- IMAGE UPLOAD (CLIP) -->
@@ -59,7 +62,7 @@
   <button
     type="button"
     class="m-photo-btn"
-    onclick="document.getElementById('m-image-input').click();"
+    id="m-photo-btn"
   >
     Photo
   </button>
@@ -69,17 +72,17 @@
 <!-- =========================
      GENRE SLIDE PANEL
 ========================= -->
-<div id="genre-overlay" class="gm-overlay"></div>
+<div id="genre-overlay" class="gm-overlay" aria-hidden="true"></div>
 
-<aside id="genre-panel" class="gm-panel">
+<aside id="genre-panel" class="gm-panel" aria-label="Genre panel">
   <div class="gm-header">
     <span>Genres</span>
-    <span
+    <button
       id="gm-close"
-      role="button"
-      aria-label="Close"
+      type="button"
+      aria-label="Close menu"
       class="gm-close-btn"
-    >✕</span>
+    >✕</button>
   </div>
 
   <nav class="gm-list">
@@ -101,7 +104,7 @@
 ========================= -->
 <nav class="m-bottom-nav">
   <a href="/">Home</a>
-  <a href="#" onclick="document.querySelector('.m-search input[type=text]').focus(); return false;">Search</a>
+  <a href="#" onclick="document.querySelector('.m-search-input')?.focus(); return false;">Search</a>
   <a href="#">Favorites</a>
   <a href="#">Profile</a>
 </nav>
@@ -112,10 +115,17 @@
 <script src="{{ url_for('static', filename='js/mobile.js') }}"></script>
 
 <script>
-  // 🔑 IMAGE SEARCH ONLY → POST
-  document.getElementById("m-image-input").addEventListener("change", function () {
-    if (this.files.length > 0) {
-      const form = this.form;
+  // Photo 버튼 → 파일 선택창
+  document.getElementById("m-photo-btn")?.addEventListener("click", function () {
+    document.getElementById("m-image-input")?.click();
+  });
+
+  // 이미지 선택되면: POST로 전환 후 제출
+  document.getElementById("m-image-input")?.addEventListener("change", function () {
+    if (this.files && this.files.length > 0) {
+      const form = document.querySelector(".m-search-global");
+      if (!form) return;
+
       form.method = "post";
       form.enctype = "multipart/form-data";
       form.submit();
