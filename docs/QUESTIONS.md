@@ -169,3 +169,31 @@ E. FOOTER
 F. 반응형
 □ 1024px 이하 grid 1열 전환되는가?
 □ 모바일에서 dashboard input grid 깨지지 않는가?
+
+[배포 검수]
+1. Render Events에서 Deploy started 정상 표시되는가?
+2. pip install 로그가 출력되는가?
+3. torch / open_clip_torch 설치 성공하는가?
+4. Port binding 정상 감지되는가?
+5. Port scan timeout 재발 여부?
+
+[CLIP 동작 검수]
+6. DISABLE_CLIP=1 시 서버 정상 실행되는가?
+7. 이미지 검색 시 결과 반환되는가?
+8. score_prompts 정상 동작하는가?
+9. CLIP lazy load가 첫 요청 시에만 발생하는가?
+
+[Text Search 검수]
+10. 정확 제목 검색 시 최상단 노출되는가?
+11. 의미 기반 검색 시 SBERT 반영되는가?
+12. 의미 없는 입력 필터링 되는가?
+
+[Hybrid 안정성]
+13. RRF fusion 시 과도한 결과 반환 방지되는가?
+14. CLIP best score 낮을 경우 MIN_RESULTS 적용되는가?
+15. anchor threshold 컷 정상 동작하는가?
+
+[대시보드]
+16. TF-IDF similarity score 정상 출력되는가?
+17. SBERT similarity score 정상 출력되는가?
+18. CLIP similarity score가 0.x 형태로 보이는가?

@@ -425,3 +425,65 @@ Date: 2026-02-12
 - dashboard 영역은 mf-dashboard-* prefix만 사용
 - global grid geometry 절대 수정 금지
 - :root 변수 오염 금지
+
+[프로젝트명]
+MovieFactory – Hybrid Search + CLIP Image Search 기반 영화 검색 시스템
+
+[배포 환경]
+- Platform: Render (Free Plan)
+- Runtime: Python 3
+- WSGI: gunicorn
+- Entry: moviefactory.app.main:app
+- Port Binding: 0.0.0.0:$PORT
+
+[핵심 아키텍처]
+
+1. RuntimeEngine
+   - 전체 검색/추천 통합 엔진
+   - CSV 기반 메타데이터 로딩
+   - Poster 없는 영화 제외 정책 적용
+   - 장르 캐시 (_genres_cache) 사전 생성
+
+2. Text Search (Hybrid)
+   - TF-IDF + SBERT hybrid_rerank
+   - Title Boost 안전장치 포함
+   - gibberish 필터링 적용
+   - score threshold 0.12 컷 정책
+
+3. Image Search
+   - CLIP 기반 cosine similarity
+   - Prompt 기반 pseudo_query 생성
+   - SBERT 제한 풀(pool) 내 결합
+   - RRF 기반 fusion
+   - 동적 anchor threshold 컷 정책
+
+4. CLIP 구조 개선
+   - open_clip_torch 사용
+   - Lazy Loading 구조 적용
+     - CLIPScorer 생성 시 모델 로딩 안 함
+     - score() 호출 시 encoder 생성
+   - DISABLE_CLIP 환경변수 지원
+
+5. Dashboard Engine Comparison
+   - TF-IDF similarity
+   - SBERT similarity
+   - CLIP similarity (원본 cosine score)
+
+[데이터]
+- canonical CSV:
+  - movie_clean_data_poster.csv 우선
+  - fallback: movie_clean_data.csv
+- clip_embeddings.npz 사용 (우선)
+- metadata.json 기반 movie_id 매핑
+
+[배포 명령]
+gunicorn moviefactory.app.main:app --bind 0.0.0.0:$PORT
+
+[의존성]
+- torch
+- open_clip_torch
+- sentence-transformers
+- scikit-learn
+- pandas
+- numpy
+- pillow

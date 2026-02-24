@@ -243,3 +243,55 @@
 해결:
 - bottom-bar 내부에 footer 문구 통합
 - footer-dashboard display:none
+
+[문제 1] Port scan timeout
+원인:
+- gunicorn이 $PORT에 bind되지 않음
+해결:
+- --bind 0.0.0.0:$PORT 명시
+
+--------------------------------------------------
+
+[문제 2] ModuleNotFoundError: clip
+원인:
+- openai clip 패키지 미설치
+해결:
+- open_clip_torch 전환
+- requirements.txt 추가
+
+--------------------------------------------------
+
+[문제 3] 서버 부팅 중 CLIP 모델 로딩으로 실패
+원인:
+- __init__ 시점에 heavy import 발생
+해결:
+- Lazy loading 구조 도입
+- encoder는 score() 호출 시 생성
+
+--------------------------------------------------
+
+[문제 4] Render Free에서 빌드 지연
+원인:
+- Free 플랜 빌드 큐 대기
+- torch 설치 시간 소요
+대응:
+- 대기 (10~20분 정상 범위)
+- 불필요한 재배포 금지
+
+--------------------------------------------------
+
+[문제 5] Deploy 로그가 즉시 안 보임
+원인:
+- 로그 시간 필터
+- Live tail 미사용
+대응:
+- Last hour → Last day 변경
+- Live tail ON
+- F5 새로고침
+
+--------------------------------------------------
+
+[문제 6] CLIP 비활성화 테스트 필요 시
+해결:
+- Render 환경변수 DISABLE_CLIP=1 설정
+- 서버 안정성 확인 후 재활성화

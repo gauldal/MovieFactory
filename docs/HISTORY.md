@@ -243,3 +243,35 @@ v1.3
 - Footer 2줄 → 1줄 통합
 - footer-dashboard 제거 (mf-bottom-bar 통합)
 
+[1단계]
+- Port scan timeout 문제 발생
+- gunicorn bind 설정 수정
+- 0.0.0.0:$PORT 적용
+
+[2단계]
+- ModuleNotFoundError: clip 발생
+- openai clip 제거
+- open_clip_torch 전환
+
+[3단계]
+- CLIP import 시 서버 부팅 실패
+- Lazy Loading 구조로 변경
+- CLIPEngine 내부에서 torch/open_clip import
+
+[4단계]
+- CLIPScorer 초기화 시 encoder 생성 제거
+- score() 호출 시에만 encoder 생성
+
+[5단계]
+- runtime_engine.py 내 image search RRF 개선
+- SBERT 제한 풀 적용
+- dynamic anchor threshold 추가
+
+[6단계]
+- requirements.txt에 open_clip_torch 추가
+- GitHub push
+- Render Auto Deploy 시작
+
+[현재 상태]
+- Render Free 환경 빌드 대기 중
+- Deploying 단계에서 dependency 설치 대기
