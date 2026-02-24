@@ -1,20 +1,20 @@
 # 🎬 MovieFactory
 
-> 단일 기준 데이터셋 기반, 재현 가능한 하이브리드 영화 검색 엔진
+> Reproducible Hybrid Movie Search Engine with Offline A/B Experiment Framework
 
-MovieFactory는 텍스트·이미지 임베딩을 결합한 하이브리드 검색 시스템이다.  
-모든 검색 결과는 **단일 기준 데이터셋 + 캐시 구조**를 기반으로 생성되며,  
-CLI·웹·CI 환경에서 동일한 평가 결과를 보장한다.
+MovieFactory는 단일 기준 데이터 기반으로 설계된  
+텍스트·이미지 하이브리드 검색 시스템이며,  
+재현 가능한 평가 및 Offline A/B 실험 구조를 포함한다.
 
 ---
 
 # 1. 프로젝트 목표
 
-- 🎯 재현 가능한 검색 엔진 구축
-- 🎯 단일 기준 데이터 기반 구조 설계
-- 🎯 회귀 테스트 자동화 (Regression Check)
-- 🎯 CI 환경에서 동일한 평가 결과 보장
-- 🎯 실험 코드와 프로덕션 코드 분리
+- 🎯 단일 기준 데이터 기반 검색 엔진 설계
+- 🎯 Hybrid Ranker 품질을 정량적으로 검증
+- 🎯 CLI / Web / CI 동일 결과 보장
+- 🎯 회귀 테스트 자동화
+- 🎯 실험 코드와 서비스 코드 분리
 
 ---
 
@@ -36,119 +36,102 @@ movie_factory_project/
 
 ---
 
-# 3. 기준 데이터
+# 3. 검색 엔진 구성
 
-본 프로젝트는 아래 파일을 **유일한 기준 데이터**로 사용한다.
-
-```
-moviefactory/data/movie_clean_data_poster.csv
-```
-
-조건:
-- 포스터 존재
-- 이미지 임베딩 생성 성공
-- 텍스트 정제 완료
-
----
-
-# 4. 검색 구조
-
-### 🔹 Text
+### Text
 - TF-IDF
 - SBERT
 
-### 🔹 Image
+### Image
 - CLIP
 
-### 🔹 Hybrid
-가중치 기반 점수 결합 방식
+### Hybrid Score
+score = w1sbert + w2tfidf + w3clip + w4cf
 
-```
-score = w1*sbert + w2*tfidf + w3*clip + w4*cf
-```
 
 ---
 
-# 5. 평가 시스템 (Evaluation)
+# 4. Offline A/B Experiment
 
-## 기본 평가 실행
+Hybrid Ranker가 실제 추천 품질을 개선하는지 검증하기 위해  
+Offline Proxy Metric 기반 실험을 설계하였다.
+
+## A/B 설정
+
+| Mode | Description |
+|------|-------------|
+| OFF  | TF-IDF only |
+| ON   | Hybrid Rerank |
+
+- n_sessions = 120
+- top_k = 20
+- candidate_k = 700
+
+## Proxy Metrics
+
+1. Genre Coherence@K
+2. Intra-list Genre Diversity@K
+3. Popularity(log1p)@K
+4. VoteCount(log1p)@K
+5. Weighted Rating@K
+
+## 결과 요약
+
+- Δ avg: +0.42
+- Popularity ↑
+- VoteCount ↑
+- Coherence ↓ (trade-off)
+
+---
+
+# 5. Evaluation & Regression
+
+### 기본 평가
 
 ```
 python -m moviefactory.eval.run_text_eval
-```
-
-## 특정 YAML 실행
 
 ```
-python -m moviefactory.eval.run_text_eval moviefactory/eval/text_queries_intent.yaml
-```
 
----
-
-# 6. 회귀 테스트 (Regression Check)
-
-### 🔹 최초 기준 업데이트
-
-```
-python -m moviefactory.eval.regression_check moviefactory/eval/text_queries_intent.yaml --update-baseline
-```
-
-### 🔹 일반 회귀 검사
+### 회귀 검사
 
 ```
 python -m moviefactory.eval.regression_check moviefactory/eval/text_queries_intent.yaml
-```
-
-또는
 
 ```
-check_regression.bat
-```
 
-성공 시:
-
-```
-✅ PASS (no regression)
-```
+CI에서도 동일 커맨드 실행.
 
 ---
 
-# 7. CI 자동 실행
+# 6. 설계 원칙
 
-GitHub Actions에서:
-
-- main push 시 자동 실행
-- 회귀 발생 시 실패 처리
-
-Workflow 위치:
-
-```
-.github/workflows/regression.yml
-```
-
----
-
-# 8. 개발 철학
-
-- 단일 소스 데이터
+- 단일 기준 데이터
 - 캐시 기반 재현성
-- 평가 우선 설계
-- CLI와 CI 동일 동작
-- 결과 수치 기반 개선
+- Runtime은 캐시만 사용
+- 평가 수치 기반 개선
+- 실험과 서비스 구조 분리
 
 ---
 
-# 9. 현재 기준 성능 (Intent Eval)
+# 7. 현재 기준 성능 (Intent Eval)
 
-| Metric   | Score |
-|----------|-------|
-| hit@1    | 0.900 |
-| hit@5    | 1.000 |
-| hit@10   | 1.000 |
-| mean_rank| 1.30  |
+| Metric    | Score |
+|-----------|-------|
+| hit@1     | 0.900 |
+| hit@5     | 1.000 |
+| hit@10    | 1.000 |
+| mean_rank | 1.30  |
 
 ---
 
-# 10. 라이선스
+# 8. 프로젝트 의의
 
-Private Project
+MovieFactory는 단순 검색 구현이 아니라,
+
+- 재현 가능한 검색 시스템 설계
+- Offline 실험 구조 설계
+- 회귀 테스트 자동화
+- Hybrid 품질 검증 체계
+
+를 포함한 구조 중심 프로젝트이다.
