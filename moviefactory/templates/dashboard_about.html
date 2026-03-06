@@ -54,7 +54,7 @@
 
     <p class="mf-about-intro">
       MovieFactory is a hybrid recommendation system that combines multiple
-      independent retrieval engines into a single, unified decision pipeline.
+      independent retrieval engines into a unified decision pipeline.
       Rather than relying on a single algorithm, it integrates complementary
       signals to achieve more robust and explainable recommendations.
     </p>
@@ -107,17 +107,20 @@
     <h2>Dashboard Scope</h2>
 
     <p>
-      The Flask-based Dashboard focuses on service-level interaction such as
-      search execution and result inspection.
-      Analytical exploration and visualization are intentionally separated
-      from the service layer.
+    The Flask-based Dashboard provides a lightweight overview of the dataset
+    and the hybrid recommendation system.
     </p>
 
     <ul>
-      <li>Search execution (Text / Image / CF)</li>
-      <li>Result inspection and diagnostics</li>
+      <li>Dataset statistics overview</li>
+      <li>Recommendation analysis</li>
       <li>System-level overview</li>
     </ul>
+
+    <p>
+    Experimental analysis and operational monitoring are handled by a
+    separate Streamlit analytics dashboard.
+    </p>
 
     <hr />
 
@@ -128,9 +131,6 @@
       <strong>Streamlit application</strong>.
       It runs independently from the Flask service layer and operates in
       <strong>read-only mode</strong>.
-    </p>
-
-    <p>
       This separation avoids security and embedding constraints while keeping
       system responsibilities clear.
     </p>

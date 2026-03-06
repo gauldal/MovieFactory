@@ -22,8 +22,8 @@ _MOVIEFACTORY_ROOT = Path(__file__).resolve().parents[1]  # moviefactory/
 UPLOAD_DIR = str(_MOVIEFACTORY_ROOT / "static" / "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-WEB_PAGE_SIZE = 21
-MOBILE_PAGE_SIZE = 20
+WEB_PAGE_SIZE = 14
+MOBILE_PAGE_SIZE = 10
 
 
 def paginate(items, page, per_page):

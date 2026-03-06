@@ -3,17 +3,28 @@
 # - Image Search: CLIP candidates + prompt-derived pseudo_query + SBERT + RRF fusion
 # - Tuned: SBERT restricted to CLIP rank pool to reduce noise
 # - Text Search: TF-IDF + SBERT hybrid + Title Boost safety for exact-title queries
+#
+# ✅ PATCH:
+#   - search_hybrid(..., debug=True) -> {"results": [...], "debug": {...}}
+#   - enabled_engines로 ablation 지원 (tfidf/sbert/clip/cf)
+#   - Engine Contribution:
+#       * text(score fusion): contrib = w * normalized_score
+#       * image(RRF): contrib = term = w/(k+rank)
+#   - Flask main.py 호환 메서드 복구:
+#       * get_popular_movies()
+#       * get_movie_by_id()
+#       * get_similar_movies()
 # ============================================================
 
 from __future__ import annotations
 
 import os
 import re
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any, Union
 
 import pandas as pd
 
-from moviefactory.engine.hybrid_engine import hybrid_rerank
+from moviefactory.engine.hybrid_engine import hybrid_rerank, _normalize  # type: ignore
 from moviefactory.config.hybrid_weights import HYBRID_WEIGHTS
 from moviefactory.engine.tfidf_engine import tfidf_engine
 from moviefactory.engine.sbert_engine import sbert_engine
@@ -50,9 +61,9 @@ def _parse_genres_cell(cell: str) -> list[str]:
     if not s:
         return []
 
-    # TMDB dict-list string like "[{'id':..,'name':'Fantasy'}, ...]"
     if s.startswith("[") and "name" in s:
         import ast
+
         try:
             obj = ast.literal_eval(s)
             if isinstance(obj, list):
@@ -68,19 +79,39 @@ def _parse_genres_cell(cell: str) -> list[str]:
     return [p.strip().lower() for p in parts if p.strip()]
 
 
+def _engine_enabled(
+    enabled_engines: Optional[Dict[str, bool]],
+    name: str,
+    default: bool = True,
+) -> bool:
+    if not enabled_engines:
+        return default
+    return bool(enabled_engines.get(name, default))
+
+
+def _safe_top_items(scores: Dict[int, float], top_k: int = 10) -> List[Dict[str, Any]]:
+    if not scores:
+        return []
+
+    ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
+    out: List[Dict[str, Any]] = []
+
+    for r, (mid, sc) in enumerate(ranked, start=1):
+        try:
+            mid_int = int(mid)
+        except Exception:
+            continue
+        out.append(
+            {
+                "rank": r,
+                "movie_id": mid_int,
+                "score": float(sc),
+            }
+        )
+    return out
+
+
 class RuntimeEngine:
-    """
-    RuntimeEngine
-
-    ✅ 페이지네이션 정책
-    - 검색/장르/탐색 화면의 21개(7×3) prev/next는 "UI/라우트"가 담당
-    - 엔진은 결과를 임의로 60개로 자르지 않는다.
-    - 대신 '유효하지 않은 입력/유효하지 않은 점수'를 걸러낸다.
-
-    ✅ 상세 페이지
-    - get_similar_movies(limit=14)는 기존 그대로 사용
-    """
-
     def __init__(self):
         base_dir = os.path.dirname(os.path.dirname(__file__))  # moviefactory/
         data_dir = os.path.join(base_dir, "data")
@@ -110,13 +141,22 @@ class RuntimeEngine:
 
         self.csv_path = csv_path
         self.df = pd.read_csv(self.csv_path)
-
         print(f"[RuntimeEngine] canonical csv = {self.csv_path} rows={len(self.df)}")
 
         required_cols = [
-            "movie_id", "title", "original_title", "overview", "tagline", "genres",
-            "tmdb_poster_url", "poster_path", "vote_average", "vote_count", "popularity",
-            "release_date", "runtime",
+            "movie_id",
+            "title",
+            "original_title",
+            "overview",
+            "tagline",
+            "genres",
+            "tmdb_poster_url",
+            "poster_path",
+            "vote_average",
+            "vote_count",
+            "popularity",
+            "release_date",
+            "runtime",
         ]
         for c in required_cols:
             if c not in self.df.columns:
@@ -140,15 +180,16 @@ class RuntimeEngine:
             inplace=True,
         )
 
-        TMDB_IMG_BASE = os.environ.get("TMDB_IMG_BASE", "https://image.tmdb.org/t/p/w500")
-
+        tmdb_img_base = os.environ.get("TMDB_IMG_BASE", "https://image.tmdb.org/t/p/w500")
         self.df["tmdb_poster_url"] = self.df["tmdb_poster_url"].astype(str).fillna("").str.strip()
         self.df["poster_path"] = self.df["poster_path"].astype(str).fillna("").str.strip()
 
         mask = (self.df["tmdb_poster_url"] == "") & (self.df["poster_path"] != "")
         if mask.any():
-            pp = self.df.loc[mask, "poster_path"].apply(lambda x: x if x.startswith("/") else "/" + x)
-            self.df.loc[mask, "tmdb_poster_url"] = TMDB_IMG_BASE + pp
+            pp = self.df.loc[mask, "poster_path"].apply(
+                lambda x: x if str(x).startswith("/") else "/" + str(x)
+            )
+            self.df.loc[mask, "tmdb_poster_url"] = tmdb_img_base + pp
 
         # 포스터 없는 영화 제외
         self.df = self.df[
@@ -173,7 +214,7 @@ class RuntimeEngine:
             except Exception:
                 pass
 
-        # 장르 파싱 캐시 (다중 장르 포함 정확히)
+        # 장르 파싱 캐시
         self._genres_cache: dict[int, list[str]] = {}
         try:
             for _, r in self.df[["movie_id", "genres"]].iterrows():
@@ -182,135 +223,6 @@ class RuntimeEngine:
         except Exception:
             self._genres_cache = {}
 
-    # ==================================================
-    # DASHBOARD — Engine Comparison (Query Similarity)
-    # ==================================================
-    def get_query_tfidf_similarity(
-        self,
-        query: str,
-        *,
-        top_k: int = 5,
-        min_score: float = 0.0,
-    ) -> List[Dict]:
-        """
-        TF-IDF query-based similarity (Dashboard/Engine Comparison)
-        Returns: List[{rank, movie_id, title, score}]
-        """
-        q = _normalize_space(query or "")
-        if not q:
-            return []
-
-        scores = tfidf_engine.score(q, top_k=700, min_score=min_score) or {}
-        if not scores:
-            return []
-
-        ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
-
-        # 빠른 title lookup
-        title_map = dict(zip(self.df["movie_id"], self.df["title"]))
-
-        out: List[Dict] = []
-        for i, (mid, sc) in enumerate(ranked, start=1):
-            try:
-                mid_int = int(mid)
-            except Exception:
-                continue
-            out.append(
-                {
-                    "rank": i,
-                    "movie_id": mid_int,
-                    "title": title_map.get(mid_int, "Unknown"),
-                    "score": round(float(sc), 4),
-                }
-            )
-        return out
-
-    def get_query_sbert_similarity(
-        self,
-        query: str,
-        *,
-        top_k: int = 5,
-        min_score: float = 0.10,
-    ) -> List[Dict]:
-        """
-        SBERT query-based similarity (Dashboard/Engine Comparison)
-        Returns: List[{rank, movie_id, title, score}]
-        """
-        q = _normalize_space(query or "")
-        if not q:
-            return []
-
-        scores = sbert_engine.score(q, top_k=700, min_score=min_score) or {}
-        if not scores:
-            return []
-
-        ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
-
-        title_map = dict(zip(self.df["movie_id"], self.df["title"]))
-
-        out: List[Dict] = []
-        for i, (mid, sc) in enumerate(ranked, start=1):
-            try:
-                mid_int = int(mid)
-            except Exception:
-                continue
-            out.append(
-                {
-                    "rank": i,
-                    "movie_id": mid_int,
-                    "title": title_map.get(mid_int, "Unknown"),
-                    "score": round(float(sc), 4),
-                }
-            )
-        return out
-
-    def get_image_clip_similarity(
-        self,
-        image_path: str,
-        *,
-        top_k: int = 5,
-        min_score: float = -1.0,
-    ) -> List[Dict]:
-        """
-        Dashboard용: CLIP image-query cosine similarity를 직접 반환한다.
-        Returns: List[{rank, movie_id, title, score}]
-        """
-        if not image_path:
-            return []
-
-        # ✅ runtime_engine.search_hybrid(image)에서 이미 사용 중인 원본 CLIP 점수 API
-        clip_scores = get_clip_engine().score(
-            image_path,
-            top_k=None,          # 전체 점수 받되
-            min_score=min_score, # 필터는 최소로
-        )
-        if not clip_scores:
-            return []
-
-        ranked = sorted(clip_scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
-
-        title_map = dict(zip(self.df["movie_id"], self.df["title"]))
-
-        out: List[Dict] = []
-        for i, (mid, sc) in enumerate(ranked, start=1):
-            try:
-                mid_int = int(mid)
-            except Exception:
-                continue
-
-            out.append(
-                {
-                    "rank": i,
-                    "movie_id": mid_int,
-                    "title": title_map.get(mid_int, "Unknown"),
-                    "score": round(float(sc), 4),  # ✅ 이제 0.1234 같은 “원본 similarity”가 나옴
-                }
-            )
-        return out
-
-    # ==================================================
-    # SORT
-    # ==================================================
     def _apply_sort(self, df: pd.DataFrame, sort: str) -> pd.DataFrame:
         if sort == "latest":
             return df.sort_values("release_date", ascending=False, na_position="last")
@@ -318,10 +230,7 @@ class RuntimeEngine:
             return df.sort_values("vote_average", ascending=False)
         return df.sort_values("popularity", ascending=False)
 
-    # ==================================================
-    # CARD / DETAIL
-    # ==================================================
-    def _row_to_card(self, row) -> Dict:
+    def _row_to_card(self, row) -> Dict[str, Any]:
         movie_id = row.get("movie_id", 0)
         try:
             movie_id = int(movie_id)
@@ -340,7 +249,7 @@ class RuntimeEngine:
             except Exception:
                 return default
 
-        tmdb_poster_url = (row.get("tmdb_poster_url", "") or "").strip()
+        tmdb_poster_url = str(row.get("tmdb_poster_url", "") or "").strip()
 
         return {
             "movie_id": movie_id,
@@ -350,7 +259,7 @@ class RuntimeEngine:
             "tagline": row.get("tagline", ""),
             "genres": row.get("genres", ""),
             "tmdb_poster_url": tmdb_poster_url,
-            "poster_url": tmdb_poster_url,  # 템플릿 호환 키
+            "poster_url": tmdb_poster_url,
             "poster_path": row.get("poster_path", ""),
             "vote_average": _to_float(row.get("vote_average", 0.0), 0.0),
             "vote_count": _to_int(row.get("vote_count", 0), 0),
@@ -359,122 +268,110 @@ class RuntimeEngine:
             "runtime": _to_int(row.get("runtime", 0), 0),
         }
 
-    def _row_to_detail(self, row) -> Dict:
-        # ✅ 상세는 "필수 메타"를 항상 포함해야 함
-        def _to_float(x, default=0.0):
-            try:
-                return float(x)
-            except Exception:
-                return default
+    # ============================================================
+    # Flask main.py compatibility methods
+    # ============================================================
+    def get_popular_movies(self, limit: int = 21, sort: str = "popular"):
+        df = self._apply_sort(self.df.copy(), sort)
 
-        def _to_int(x, default=0):
-            try:
-                return int(x)
-            except Exception:
-                return default
+        if limit and limit > 0:
+            df = df.head(int(limit))
 
-        if hasattr(row, "to_dict"):
-            raw = row.to_dict()
-        else:
-            raw = dict(row)
-
-        tmdb_poster_url = (raw.get("tmdb_poster_url", "") or "").strip()
-
-        d = {
-            "movie_id": _to_int(raw.get("movie_id", 0), 0),
-            "title": raw.get("title", "") or "",
-            "original_title": raw.get("original_title", "") or "",
-            "overview": raw.get("overview", "") or "",
-            "tagline": raw.get("tagline", "") or "",
-            "genres": raw.get("genres", "") or "",
-            "tmdb_poster_url": tmdb_poster_url,
-            "poster_url": tmdb_poster_url,
-            "poster_path": raw.get("poster_path", "") or "",
-            "vote_average": _to_float(raw.get("vote_average", 0.0), 0.0),
-            "vote_count": _to_int(raw.get("vote_count", 0), 0),
-            "popularity": _to_float(raw.get("popularity", 0.0), 0.0),
-            "release_date": raw.get("release_date", "") or "",
-            "runtime": _to_int(raw.get("runtime", 0), 0),
-        }
-
-        return d
-
-    # ==================================================
-    # PUBLIC API
-    # ==================================================
-    def get_popular_movies(self, *, limit: int = 21, sort: str = "popular"):
-        df = self._apply_sort(self.df, sort)
-        total_count = len(df)
-        movies = [self._row_to_card(r) for _, r in df.head(limit).iterrows()]
+        movies = [self._row_to_card(row) for _, row in df.iterrows()]
+        total_count = len(self.df)
         total_pages = 1
         return movies, total_pages, total_count
 
-    def get_movie_by_id(self, movie_id: int) -> Dict:
+    def get_movie_by_id(self, movie_id: int):
         try:
             movie_id = int(movie_id)
         except Exception:
-            return {}
+            return None
+
         row = self.df[self.df["movie_id"] == movie_id]
         if row.empty:
-            return {}
-        return self._row_to_detail(row.iloc[0])
+            return None
 
-    def get_similar_movies(self, movie_id: int, *, limit: int = 14):
+        movie = self._row_to_card(row.iloc[0])
+
+        # 상세 화면 편의 필드
+        genres_list = self._genres_cache.get(movie_id, [])
+        movie["genres_list"] = genres_list
+        movie["genres_display"] = ", ".join([g.title() for g in genres_list]) if genres_list else ""
+
+        return movie
+
+    def get_similar_movies(self, movie_id: int, limit: int = 14):
         try:
             movie_id = int(movie_id)
         except Exception:
             return []
 
-        # 기준 영화
-        base_row = self.df[self.df["movie_id"] == movie_id]
-        if base_row.empty:
+        target = self.df[self.df["movie_id"] == movie_id]
+        if target.empty:
             return []
 
-        base_genres = self._genres_cache.get(movie_id, [])
-        if not base_genres:
-            # 장르 없으면 fallback → 인기순
-            df = self.df[self.df["movie_id"] != movie_id]
-            df = df.sort_values("popularity", ascending=False)
-            return [self._row_to_card(r) for _, r in df.head(limit).iterrows()]
+        target_row = target.iloc[0]
+        target_genres = set(self._genres_cache.get(movie_id, []))
+        target_title = str(target_row.get("title", "")).strip().lower()
 
         candidates = []
 
         for _, row in self.df.iterrows():
-            mid = int(row["movie_id"])
+            try:
+                mid = int(row.get("movie_id", 0))
+            except Exception:
+                continue
+
             if mid == movie_id:
                 continue
 
-            genres = self._genres_cache.get(mid, [])
-            if not genres:
+            row_title = str(row.get("title", "")).strip().lower()
+            if row_title == target_title:
                 continue
 
-            # 장르 교집합 점수
-            intersection = len(set(base_genres) & set(genres))
-            if intersection == 0:
-                continue
+            genres = set(self._genres_cache.get(mid, []))
+            genre_overlap = len(target_genres & genres)
 
-            # 최종 점수 = (장르 일치 개수 * 10) + popularity 가중치
-            popularity = float(row.get("popularity", 0.0))
-            score = (intersection * 10.0) + (popularity * 0.01)
+            try:
+                popularity = float(row.get("popularity", 0.0) or 0.0)
+            except Exception:
+                popularity = 0.0
+
+            try:
+                vote_average = float(row.get("vote_average", 0.0) or 0.0)
+            except Exception:
+                vote_average = 0.0
+
+            try:
+                vote_count = float(row.get("vote_count", 0.0) or 0.0)
+            except Exception:
+                vote_count = 0.0
+
+            # 장르 겹침 우선 + 대중성/평점 보조
+            score = (
+                genre_overlap * 10.0
+                + popularity * 0.05
+                + vote_average * 0.5
+                + min(vote_count, 5000) * 0.0002
+            )
+
+            if genre_overlap <= 0:
+                continue
 
             candidates.append((score, row))
 
-        if not candidates:
-            # fallback
-            df = self.df[self.df["movie_id"] != movie_id]
-            df = df.sort_values("popularity", ascending=False)
-            return [self._row_to_card(r) for _, r in df.head(limit).iterrows()]
-
-        # 점수 기준 정렬
         candidates.sort(key=lambda x: x[0], reverse=True)
 
-        top_rows = [r for _, r in candidates[:limit]]
-        return [self._row_to_card(r) for r in top_rows]
+        out = []
+        for _, row in candidates[: int(limit)]:
+            out.append(self._row_to_card(row))
 
+        return out
 
-    # ==================================================
-    # SEARCH
-    # ==================================================
+    # ============================================================
+    # Hybrid Search
+    # ============================================================
     def search_hybrid(
         self,
         *,
@@ -483,197 +380,270 @@ class RuntimeEngine:
         search_type: str = "text",
         sort: str = "popular",
         candidate_k: int = 700,
-    ) -> List[Dict]:
-
+        debug: bool = False,
+        enabled_engines: Optional[Dict[str, bool]] = None,
+        debug_top_k: int = 20,
+    ) -> Union[List[Dict], Dict[str, Any]]:
         query = _normalize_space(query or "")
         has_query = bool(query)
         has_image = bool(image_path)
 
-        # ------------------------------
-        # BROWSE
-        # ------------------------------
-        if not has_query and not has_image and search_type != "genre":
-            df = self._apply_sort(self.df, sort)
-            return [self._row_to_card(r) for _, r in df.iterrows()]
+        debug_payload: Dict[str, Any] = {
+            "search_type": search_type,
+            "sort": sort,
+            "candidate_k": int(candidate_k),
+            "enabled_engines": enabled_engines or {},
+        }
 
         # ------------------------------
-        # GENRE SEARCH
-        # ------------------------------
-        if search_type == "genre" and has_query:
-            q = query.lower().strip()
-            genre_alias = {
-                "sf": ["science fiction", "sci-fi", "sci fi", "sf"],
-            }
-            targets = genre_alias.get(q, [q])
-
-            matched_ids: list[int] = []
-            if self._genres_cache:
-                for mid, glist in self._genres_cache.items():
-                    if any(t in glist for t in targets):
-                        matched_ids.append(mid)
-            else:
-                genres_lower = self.df["genres"].astype(str).str.lower()
-                mask = pd.Series([False] * len(self.df), index=self.df.index)
-                for t in targets:
-                    mask = mask | genres_lower.str.contains(t, regex=False)
-                df = self.df[mask]
-                df = self._apply_sort(df, sort)
-                return [self._row_to_card(r) for _, r in df.iterrows()]
-
-            if not matched_ids:
-                return []
-
-            df = self.df[self.df["movie_id"].isin(matched_ids)]
-            df = self._apply_sort(df, sort)
-            return [self._row_to_card(r) for _, r in df.iterrows()]
-
-        # ------------------------------
-        # IMAGE SEARCH (TUNED RRF)
+        # IMAGE SEARCH (RRF)
         # ------------------------------
         if search_type == "image" and image_path:
-            # 1) CLIP 점수: 전체 대상 비교
-            clip_scores = get_clip_engine().score(
-                image_path,
-                top_k=None,
-                min_score=-1.0,
-            )
-            if not clip_scores:
-                return []
+            if not _engine_enabled(enabled_engines, "clip", True):
+                if not debug:
+                    return []
+                debug_payload["fusion_method"] = "rrf"
+                debug_payload["error"] = "CLIP disabled (image search requires CLIP)."
+                return {"results": [], "debug": debug_payload}
 
-            # 2) prompt 기반 pseudo_query 만들기
+            clip_scores = get_clip_engine().score(image_path, top_k=None, min_score=-1.0) or {}
+            if not clip_scores:
+                if not debug:
+                    return []
+                debug_payload["fusion_method"] = "rrf"
+                debug_payload["clip_scores_n"] = 0
+                return {"results": [], "debug": debug_payload}
+
             prompts = [
-                # MovieFactory 장르 탭 + 톤/테마
-                "action", "adventure", "animation", "comedy", "crime", "drama",
-                "fantasy", "horror", "romance", "science fiction", "thriller", "war",
-                # 히어로/범죄 힌트
-                "superhero", "vigilante", "batman",
-                # 분위기/공간 힌트
-                "dark", "gritty", "noir", "mystery", "city", "night",
-                # 사건/액션 힌트
-                "explosion", "fire", "violence", "revenge",
+                "action",
+                "adventure",
+                "animation",
+                "comedy",
+                "crime",
+                "drama",
+                "fantasy",
+                "horror",
+                "romance",
+                "science fiction",
+                "thriller",
+                "war",
+                "superhero",
+                "vigilante",
+                "batman",
+                "dark",
+                "gritty",
+                "noir",
+                "mystery",
+                "city",
+                "night",
+                "explosion",
+                "fire",
+                "violence",
+                "revenge",
             ]
             prompt_scores = get_clip_engine().score_prompts(image_path, prompts) or {}
             top_prompts = sorted(prompt_scores.items(), key=lambda x: x[1], reverse=True)[:6]
             pseudo_query = " ".join([p for p, s in top_prompts if s > 0]).strip()
 
-            # 3) SBERT 의미 점수 (전체 -> CLIP 상위 pool로 restrict)
-            CLIP_RANK_POOL = 600
+            use_sbert = _engine_enabled(enabled_engines, "sbert", True)
+            clip_rank_pool = 600
 
-            if pseudo_query:
-                sbert_all = sbert_engine.score(pseudo_query)
-
+            if pseudo_query and use_sbert:
+                sbert_all = sbert_engine.score(pseudo_query) or {}
                 clip_sorted_for_sbert = sorted(
-                    clip_scores.items(),
-                    key=lambda x: x[1],
-                    reverse=True
-                )[:CLIP_RANK_POOL]
+                    clip_scores.items(), key=lambda x: x[1], reverse=True
+                )[:clip_rank_pool]
                 candidate_set = {int(mid) for mid, _ in clip_sorted_for_sbert}
-
-                sbert_scores = {mid: sc for mid, sc in sbert_all.items() if int(mid) in candidate_set}
+                sbert_scores = {
+                    int(mid): float(sc)
+                    for mid, sc in sbert_all.items()
+                    if int(mid) in candidate_set
+                }
             else:
                 sbert_scores = {}
 
-            # 4) RRF (순위 기반 결합) - 튜닝값
+            # RRF params
             k = 40
             w_clip = 1.0
             w_sbert = 0.9
 
-            # ✅ RRF 대상 풀 = (CLIP 상위 pool) ∪ (SBERT 상위 pool)
-            CLIP_RANK_POOL = 600
-            SBERT_RANK_POOL = 800
+            clip_rank_pool = 600
+            sbert_rank_pool = 800
 
-            clip_sorted = sorted(clip_scores.items(), key=lambda x: x[1], reverse=True)[:CLIP_RANK_POOL]
-            clip_rank: dict[int, int] = {}
-            for r, (mid, _) in enumerate(clip_sorted, start=1):
-                clip_rank[int(mid)] = r
+            clip_sorted = sorted(
+                clip_scores.items(), key=lambda x: x[1], reverse=True
+            )[:clip_rank_pool]
+            clip_rank: dict[int, int] = {
+                int(mid): r for r, (mid, _) in enumerate(clip_sorted, start=1)
+            }
 
             sbert_rank: dict[int, int] = {}
             if sbert_scores:
-                sbert_sorted = sorted(sbert_scores.items(), key=lambda x: x[1], reverse=True)[:SBERT_RANK_POOL]
-                for r, (mid, _) in enumerate(sbert_sorted, start=1):
-                    sbert_rank[int(mid)] = r
+                sbert_sorted = sorted(
+                    sbert_scores.items(), key=lambda x: x[1], reverse=True
+                )[:sbert_rank_pool]
+                sbert_rank = {
+                    int(mid): r for r, (mid, _) in enumerate(sbert_sorted, start=1)
+                }
 
             pool_ids = set(clip_rank.keys()) | set(sbert_rank.keys())
 
-            fused: list[tuple[int, float]] = []
+            fused: list[tuple[int, float, float, float]] = []
+            # (mid, rrf_score, clip_term, sbert_term)
             for mid in pool_ids:
                 rc = clip_rank.get(mid, 10**9)
                 rs = sbert_rank.get(mid, 10**9)
 
-                score = 0.0
-                if rc < 10**8:
-                    score += (w_clip / (k + rc))
-                if rs < 10**8:
-                    score += (w_sbert / (k + rs))
-
-                fused.append((mid, score))
+                clip_term = (w_clip / (k + rc)) if rc < 10**8 else 0.0
+                sbert_term = (w_sbert / (k + rs)) if rs < 10**8 else 0.0
+                score = clip_term + sbert_term
+                fused.append((mid, score, clip_term, sbert_term))
 
             fused.sort(key=lambda x: x[1], reverse=True)
 
-            # 결과 컷 정책 (RRF 전용: anchor 기반 동적 컷)
-            MAX_RESULTS = 600
-            MIN_RESULTS = 120
+            # cut policy
+            max_results = 600
+            min_results = 120
 
             try:
                 clip_best = float(max(clip_scores.values())) if clip_scores else 0.0
             except Exception:
                 clip_best = 0.0
 
-            # 먼저 상한 적용
-            fused = fused[:MAX_RESULTS]
+            fused = fused[:max_results]
 
             if clip_best < 0.55:
-                fused = fused[:MIN_RESULTS]
+                fused = fused[:min_results]
+                cut_policy = {
+                    "mode": "weak_input_min_cap",
+                    "clip_best": clip_best,
+                    "kept": len(fused),
+                }
             else:
-                # ✅ anchor: 상위 N번째 점수를 기준으로 threshold를 잡으면 분포가 흔들려도 안정적
-                # 목표: 강한 입력에서 보통 200~350 사이로 자연스럽게 떨어지게
-                TARGET_ANCHOR = 220  # 180~280 사이에서 취향/UX에 맞게 조절
-
+                target_anchor = 220
                 if not fused:
                     fused = []
+                    cut_policy = {"mode": "empty"}
                 else:
-                    anchor_idx = min(len(fused) - 1, max(MIN_RESULTS - 1, TARGET_ANCHOR - 1))
+                    anchor_idx = min(len(fused) - 1, max(min_results - 1, target_anchor - 1))
                     anchor_score = fused[anchor_idx][1]
-
-                    # anchor 대비 비율 아래는 컷 (0.60~0.85 튜닝)
-                    # 값이 낮을수록 더 많이 남음(=결과가 커짐)
                     anchor_ratio = 0.70
                     threshold = anchor_score * anchor_ratio
-
-                    filtered = [(mid, sc) for (mid, sc) in fused if sc >= threshold]
-
-                    # 하한 보장 (너무 줄면 MIN 유지)
-                    if len(filtered) < MIN_RESULTS:
-                        filtered = fused[:MIN_RESULTS]
-
+                    filtered = [t for t in fused if t[1] >= threshold]
+                    if len(filtered) < min_results:
+                        filtered = fused[:min_results]
                     fused = filtered
+                    cut_policy = {
+                        "mode": "anchor_ratio",
+                        "anchor_idx": anchor_idx + 1,
+                        "anchor_score": float(anchor_score),
+                        "anchor_ratio": float(anchor_ratio),
+                        "threshold": float(threshold),
+                        "kept": len(fused),
+                    }
 
-
-            # 카드 변환 (점수는 UI 미노출)
             movies: list[dict] = []
-            for mid, _ in fused:
+            contrib_rows: List[Dict[str, Any]] = []
+
+            for i, (mid, rrf_score, clip_term, sbert_term) in enumerate(fused, start=1):
                 row = self.df[self.df["movie_id"] == int(mid)]
                 if row.empty:
                     continue
-                movies.append(self._row_to_card(row.iloc[0]))
 
-            return movies
+                card = self._row_to_card(row.iloc[0])
+
+                card["rrf_score"] = float(rrf_score)
+                card["clip_rank"] = int(clip_rank.get(int(mid), 10**9))
+                card["sbert_rank"] = int(sbert_rank.get(int(mid), 10**9)) if sbert_rank else None
+                card["clip_term"] = float(clip_term)
+                card["sbert_term"] = float(sbert_term)
+                card["dominant_engine"] = "clip" if clip_term >= sbert_term else "sbert"
+                card["_pseudo_query"] = pseudo_query
+
+                movies.append(card)
+
+                if i <= min(debug_top_k, 50):
+                    contrib_rows.append(
+                        {
+                            "final_rank": i,
+                            "movie_id": int(mid),
+                            "title": card.get("title"),
+                            "rrf_score": float(rrf_score),
+                            "clip_rank": int(card.get("clip_rank")),
+                            "sbert_rank": card.get("sbert_rank"),
+                            "clip_term": float(clip_term),
+                            "sbert_term": float(sbert_term),
+                            "dominant_engine": card.get("dominant_engine"),
+                            "present_clip": int(mid) in clip_rank,
+                            "present_sbert": int(mid) in sbert_rank,
+                        }
+                    )
+
+            if not debug:
+                return movies
+
+            debug_payload["fusion_method"] = "rrf"
+            debug_payload["rrf_params"] = {"k": k, "w_clip": w_clip, "w_sbert": w_sbert}
+            debug_payload["pseudo_query"] = pseudo_query
+            debug_payload["clip_best"] = clip_best
+            debug_payload["cut_policy"] = cut_policy
+
+            debug_payload["engine_counts"] = {
+                "clip_scores_total": len(clip_scores),
+                "clip_rank_pool": len(clip_rank),
+                "sbert_scores_restricted": len(sbert_scores),
+                "sbert_rank_pool": len(sbert_rank),
+                "union_pool_ids": len(pool_ids),
+            }
+
+            debug_payload["engine_top"] = {
+                "clip_top": _safe_top_items(
+                    {int(k0): float(v) for k0, v in clip_scores.items()},
+                    top_k=min(debug_top_k, 30),
+                ),
+                "prompt_top": [
+                    {"rank": i + 1, "prompt": p, "score": float(s)}
+                    for i, (p, s) in enumerate(top_prompts)
+                ],
+                "sbert_top": _safe_top_items(
+                    {int(k0): float(v) for k0, v in sbert_scores.items()},
+                    top_k=min(debug_top_k, 30),
+                ),
+                "fused_top": [
+                    {
+                        "rank": i + 1,
+                        "movie_id": int(mid),
+                        "rrf_score": float(sc),
+                        "clip_term": float(ct),
+                        "sbert_term": float(st),
+                    }
+                    for i, (mid, sc, ct, st) in enumerate(fused[: min(debug_top_k, 50)])
+                ],
+                "contrib_top": contrib_rows,
+            }
+
+            debug_payload["result_count"] = len(movies)
+            return {"results": movies, "debug": debug_payload}
 
         # ------------------------------
-        # TEXT SEARCH (HYBRID)
+        # TEXT SEARCH (score fusion)
         # ------------------------------
         if search_type == "text" and has_query:
             if _looks_like_gibberish(query):
-                return []
+                if not debug:
+                    return []
+                debug_payload["fusion_method"] = "score_fusion"
+                debug_payload["error"] = "gibberish_query"
+                return {"results": [], "debug": debug_payload}
 
             tokens = _tokenize(query)
             if not tokens:
-                return []
+                if not debug:
+                    return []
+                debug_payload["fusion_method"] = "score_fusion"
+                debug_payload["error"] = "no_tokens"
+                return {"results": [], "debug": debug_payload}
 
-            # ------------------------------
-            # TITLE BOOST (정확 제목 검색 안전장치)
-            # - query가 title에 포함되는 영화는 결과 맨 앞에 병합한다.
-            # ------------------------------
             q_low = query.lower().strip()
             title_hits: List[Dict] = []
             try:
@@ -687,18 +657,51 @@ class RuntimeEngine:
             except Exception:
                 title_hits = []
 
-            tfidf_scores = tfidf_engine.score(query, top_k=int(candidate_k), min_score=0.0)
-            sbert_scores = sbert_engine.score(query, top_k=int(candidate_k), min_score=0.10)
+            use_tfidf = _engine_enabled(enabled_engines, "tfidf", True)
+            use_sbert = _engine_enabled(enabled_engines, "sbert", True)
+
+            tfidf_scores: Dict[int, float] = {}
+            sbert_scores: Dict[int, float] = {}
+
+            if use_tfidf:
+                raw = tfidf_engine.score(query, top_k=int(candidate_k), min_score=0.0) or {}
+                tfidf_scores = {int(mid): float(sc) for mid, sc in raw.items()}
+
+            if use_sbert:
+                raw = sbert_engine.score(query, top_k=int(candidate_k), min_score=0.10) or {}
+                sbert_scores = {int(mid): float(sc) for mid, sc in raw.items()}
+
+            base_w = dict(HYBRID_WEIGHTS.get("text", {}) or {})
+            w = {
+                "tfidf": float(base_w.get("tfidf", 0.0)) if use_tfidf else 0.0,
+                "sbert": float(base_w.get("sbert", 0.0)) if use_sbert else 0.0,
+                "clip": 0.0,
+                "cf": 0.0,
+            }
 
             ranked_items = hybrid_rerank(
-                tfidf_results=tfidf_scores,
-                sbert_results=sbert_scores,
+                tfidf_results=tfidf_scores if use_tfidf else None,
+                sbert_results=sbert_scores if use_sbert else None,
                 clip_results=None,
                 cf_results=None,
-                weights=HYBRID_WEIGHTS.get("text", {}),
+                weights=w,
             )
+
             if not ranked_items:
-                return title_hits if title_hits else []
+                movies = title_hits if title_hits else []
+                if not debug:
+                    return movies
+
+                debug_payload["fusion_method"] = "score_fusion"
+                debug_payload["weights"] = w
+                debug_payload["engine_counts"] = {
+                    "tfidf_n": len(tfidf_scores),
+                    "sbert_n": len(sbert_scores),
+                    "union_ids": len(set(tfidf_scores.keys()) | set(sbert_scores.keys())),
+                    "overlap_tfidf_sbert": len(set(tfidf_scores.keys()) & set(sbert_scores.keys())),
+                }
+                debug_payload["result_count"] = len(movies)
+                return {"results": movies, "debug": debug_payload}
 
             movies: List[Dict] = []
             for item in ranked_items:
@@ -737,7 +740,6 @@ class RuntimeEngine:
                 except Exception:
                     pass
 
-            # ✅ title_hits를 결과 맨 앞에 합치되 중복 제거
             if title_hits:
                 seen = set()
                 merged: List[Dict] = []
@@ -749,6 +751,66 @@ class RuntimeEngine:
                     merged.append(m)
                 movies = merged
 
-            return movies
+            if not debug:
+                return movies
 
-        return []
+            tfidf_norm = _normalize(tfidf_scores) if tfidf_scores else {}
+            sbert_norm = _normalize(sbert_scores) if sbert_scores else {}
+
+            union_ids = set(tfidf_scores.keys()) | set(sbert_scores.keys())
+            overlap = set(tfidf_scores.keys()) & set(sbert_scores.keys())
+
+            debug_payload["fusion_method"] = "score_fusion"
+            debug_payload["weights"] = w
+            debug_payload["engine_counts"] = {
+                "tfidf_n": len(tfidf_scores),
+                "sbert_n": len(sbert_scores),
+                "union_ids": len(union_ids),
+                "overlap_tfidf_sbert": len(overlap),
+            }
+
+            contrib_rows: List[Dict[str, Any]] = []
+            for i, m in enumerate(movies[: min(debug_top_k, 50)], start=1):
+                mid = int(m.get("movie_id", 0))
+                tf = float(tfidf_norm.get(mid, 0.0))
+                sb = float(sbert_norm.get(mid, 0.0))
+                tf_c = tf * float(w.get("tfidf", 0.0))
+                sb_c = sb * float(w.get("sbert", 0.0))
+                dom = "tfidf" if tf_c >= sb_c else "sbert"
+
+                m["tfidf_norm"] = tf
+                m["sbert_norm"] = sb
+                m["tfidf_contrib"] = tf_c
+                m["sbert_contrib"] = sb_c
+                m["dominant_engine"] = dom
+
+                contrib_rows.append(
+                    {
+                        "final_rank": i,
+                        "movie_id": mid,
+                        "title": m.get("title"),
+                        "final_score": float(m.get("score", 0.0)),
+                        "tfidf_norm": tf,
+                        "sbert_norm": sb,
+                        "tfidf_contrib": tf_c,
+                        "sbert_contrib": sb_c,
+                        "dominant_engine": dom,
+                        "present_tfidf": mid in tfidf_scores,
+                        "present_sbert": mid in sbert_scores,
+                    }
+                )
+
+            debug_payload["engine_top"] = {
+                "tfidf_top": _safe_top_items(tfidf_scores, top_k=min(debug_top_k, 30)),
+                "sbert_top": _safe_top_items(sbert_scores, top_k=min(debug_top_k, 30)),
+                "contrib_top": contrib_rows,
+            }
+            debug_payload["result_count"] = len(movies)
+            return {"results": movies, "debug": debug_payload}
+
+        if not debug:
+            return []
+
+        debug_payload["fusion_method"] = "none"
+        debug_payload["result_count"] = 0
+        return {"results": [], "debug": debug_payload}

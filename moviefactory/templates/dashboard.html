@@ -14,6 +14,11 @@
     <!-- ===============================
          DATASET OVERVIEW
     ================================ -->
+
+    <p class="mf-dashboard-desc">
+      Overview of dataset statistics and hybrid recommendation analysis.
+    </p>
+
     <section class="mf-dashboard-section mf-dashboard-overview">
       <h2 class="mf-dashboard-title">Dataset Overview</h2>
 
@@ -51,14 +56,17 @@
     </section>
 
     <!-- ===============================
-         SEARCH CONTROLS
+         DISABLED: ENGINE INTERACTION (Search Controls)
+         Broken after RuntimeEngine refactor
+         Keeping code for future recovery
     ================================ -->
+    <!--
     <section class="mf-dashboard-section mf-dashboard-inputs">
       <h2 class="mf-dashboard-title">Search Controls</h2>
 
       <div class="mf-dashboard-input-grid">
 
-        <!-- TEXT QUERY -->
+
         <div class="mf-input-box">
           <label class="mf-input-label">Text Query</label>
           <input
@@ -75,7 +83,6 @@
           </div>
         </div>
 
-        <!-- IMAGE QUERY -->
         <div class="mf-input-box">
           <label class="mf-input-label">Image Query</label>
           <input
@@ -95,15 +102,13 @@
       </div>
     </section>
 
-    <!-- ===============================
-         ENGINE COMPARISON (PARALLEL)
-    ================================ -->
+
     <section class="mf-dashboard-section mf-dashboard-engines">
       <h2 class="mf-dashboard-title">Engine Comparison</h2>
 
       <div class="mf-engine-grid mf-engine-grid-3">
 
-        <!-- TF-IDF -->
+
         <div class="mf-engine-panel" id="panel-tfidf">
           <div class="mf-engine-header">
             TF-IDF <span class="mf-engine-tag">Text</span>
@@ -114,7 +119,7 @@
           <div class="mf-engine-results"></div>
         </div>
 
-        <!-- SBERT -->
+
         <div class="mf-engine-panel" id="panel-sbert">
           <div class="mf-engine-header">
             SBERT <span class="mf-engine-tag">Text</span>
@@ -125,7 +130,7 @@
           <div class="mf-engine-results"></div>
         </div>
 
-        <!-- CLIP -->
+
         <div class="mf-engine-panel" id="panel-clip">
           <div class="mf-engine-header">
             CLIP <span class="mf-engine-tag">Image</span>
@@ -139,9 +144,8 @@
       </div>
     </section>
 
-    <!-- ===============================
-         CF-SVD NOTE
-    ================================ -->
+
+
     <section class="mf-dashboard-section mf-dashboard-note">
       <h3 class="mf-dashboard-subtitle">CF-SVD (Collaborative Filtering)</h3>
       <div class="mf-dashboard-note-box">
@@ -151,7 +155,9 @@
         <br>
         <em>(Recommended: demonstrate CF-SVD in personalized recommendation scenarios)</em>
       </div>
-    </section>
+    </section>    -->
+
+
 
     <!-- ===============================
          RELEASE YEAR DISTRIBUTION

@@ -58,7 +58,7 @@ def index():
     session.pop("image_search_preview", None)
 
     is_mobile = is_mobile_request()
-    grid_limit = 20 if is_mobile else 21
+    grid_limit = 10 if is_mobile else 14
 
     movies, total_pages, total_count = runtime_engine.get_popular_movies(
         limit=grid_limit,
@@ -87,15 +87,15 @@ def movie_detail(movie_id):
 
     is_mobile = is_mobile_request()
 
-    # ✅ 트레일러: 모바일 4개 / 웹 3개
+    # ✅ 트레일러: 모바일 2개 / 웹 3개
     trailer_limit = 2 if is_mobile else 3
     trailers = search_youtube_trailers(
         movie.get("title"),
         max_items=trailer_limit,
     )
 
-    # ✅ 씨밀러: 모바일 6개 / 웹 14개
-    similar_limit = 6 if is_mobile else 14
+    # ✅ 씨밀러: 모바일 3개 / 웹 7개
+    similar_limit = 3 if is_mobile else 7
     similar_movies = runtime_engine.get_similar_movies(
         movie_id,
         limit=similar_limit,

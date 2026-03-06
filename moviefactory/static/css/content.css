@@ -79,6 +79,7 @@
     background-color: #eee;
     overflow: hidden;
     border-radius: 8px;
+
 }
 
 .mf-poster-wrapper img {
@@ -104,7 +105,7 @@
 =============================== */
 
 .mf-movie-info {
-    margin-top: 6px;
+    margin-top: 2px;
     padding: 6px 6px 8px 6px;
 }
 
@@ -1101,4 +1102,42 @@
   -webkit-line-clamp: 2;      /* 2줄까지만 */
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.movie-col-poster {
+    margin-top: -20px;
+}
+
+.movie-col-trailer {
+    margin-top: -50px;
+}
+
+.yt-list {
+    margin-top: -14px;
+}
+
+.similar-movies {
+    margin-top: -12px;
+}
+
+.similar-movies .section-title {
+    margin-top: -8px;
+    margin-bottom: 10px;
+}
+
+.similar-movies .mf-movie-card {
+    position: relative;
+    top: -4px;
+}
+
+.mf-dashboard-desc {
+  margin: 6px 0 20px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.mf-dashboard-about-link{
+  font-size:13px;
+  color:#6b7280;
+  text-decoration:none;
 }
