@@ -454,7 +454,11 @@ MovieFactory는 개인 연구 및 포트폴리오 목적으로 개발된 프로�
 ---
 
 # 👤 Author
+<<<<<<< HEAD
 진달래 
+=======
+진달래  
+>>>>>>> a496ef9 (Improve README for portfolio presentation)
 Search / CX Technology Portfolio Project
 
 GitHub  
