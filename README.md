@@ -454,7 +454,7 @@ MovieFactory는 개인 연구 및 포트폴리오 목적으로 개발된 프로�
 ---
 
 # 👤 Author
-Gauldal  
+진달래 
 Search / CX Technology Portfolio Project
 
 GitHub  
