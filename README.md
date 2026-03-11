@@ -6,6 +6,7 @@
   <img src="docs/images/demo.gif" width="900">
 </p>
 
+
 MovieFactory는 **텍스트 검색, 의미 기반 검색, 이미지 기반 검색을 결합한 Hybrid Retrieval 영화 검색 시스템**입니다.
 단순한 검색 기능 구현을 넘어 **검색 랭킹 분석, 검색 실험, 검색 운영 모니터링**까지 가능한 **Search Experiment Platform** 형태로 설계되었습니다.
 
