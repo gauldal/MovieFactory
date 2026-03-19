@@ -14,6 +14,7 @@ from flask import (
 
 from moviefactory.engine.engine_provider import get_runtime_engine
 from moviefactory.utils.device import is_mobile_request
+from moviefactory.app.movie_api import normalize_movie
 
 bp = Blueprint("search", __name__, url_prefix="/search")
 runtime_engine = get_runtime_engine()
@@ -38,6 +39,10 @@ def paginate(items, page, per_page):
 def _clear_image_session():
     session.pop("image_search_path", None)
     session.pop("image_search_preview", None)
+
+
+def _normalize_movies(items):
+    return [normalize_movie(m) for m in items]
 
 
 @bp.route("", methods=["GET", "POST"])
@@ -79,6 +84,7 @@ def search():
             )
 
             movies, total_pages, total_count, page = paginate(full_results, 1, per_page)
+            movies = _normalize_movies(movies)
 
             return render_template(
                 template,
@@ -108,6 +114,8 @@ def search():
             sort=sort,
         )
         movies, total_pages, total_count, page = paginate(full_results, page, per_page)
+        movies = _normalize_movies(movies)
+
         return render_template(
             template,
             movies=movies,
@@ -130,6 +138,8 @@ def search():
             sort=sort,
         )
         movies, total_pages, total_count, page = paginate(full_results, page, per_page)
+        movies = _normalize_movies(movies)
+
         return render_template(
             template,
             movies=movies,
@@ -161,6 +171,8 @@ def search():
             sort=sort,
         )
         movies, total_pages, total_count, page = paginate(full_results, page, per_page)
+        movies = _normalize_movies(movies)
+
         return render_template(
             template,
             movies=movies,
@@ -180,6 +192,7 @@ def search():
     # ==================================================
     _clear_image_session()
     return redirect(url_for("index"))
+
 
 @bp.route("/api/explain/<int:movie_id>")
 def api_explain(movie_id):

@@ -1,19 +1,10 @@
 # ============================================================
 # moviefactory/engine/runtime_engine.py
 # - Image Search: CLIP candidates + prompt-derived pseudo_query + SBERT + RRF fusion
-# - Tuned: SBERT restricted to CLIP rank pool to reduce noise
-# - Text Search: TF-IDF + SBERT hybrid + Title Boost safety for exact-title queries
-#
-# ✅ PATCH:
-#   - search_hybrid(..., debug=True) -> {"results": [...], "debug": {...}}
-#   - enabled_engines로 ablation 지원 (tfidf/sbert/clip/cf)
-#   - Engine Contribution:
-#       * text(score fusion): contrib = w * normalized_score
-#       * image(RRF): contrib = term = w/(k+rank)
-#   - Flask main.py 호환 메서드 복구:
-#       * get_popular_movies()
-#       * get_movie_by_id()
-#       * get_similar_movies()
+# - Text Search: TF-IDF + SBERT hybrid
+# - Genre Search: genre overlap 기반 검색 + alias 지원
+# - Flask main.py compatibility methods 유지
+# - genres_cache sanity print 추가
 # ============================================================
 
 from __future__ import annotations
@@ -24,7 +15,7 @@ from typing import Optional, List, Dict, Any, Union
 
 import pandas as pd
 
-from moviefactory.engine.hybrid_engine import hybrid_rerank, _normalize  # type: ignore
+from moviefactory.engine.hybrid_engine import hybrid_rerank  # type: ignore
 from moviefactory.config.hybrid_weights import HYBRID_WEIGHTS
 from moviefactory.engine.tfidf_engine import tfidf_engine
 from moviefactory.engine.sbert_engine import sbert_engine
@@ -61,6 +52,7 @@ def _parse_genres_cell(cell: str) -> list[str]:
     if not s:
         return []
 
+    # TMDB style list string: [{'id': 28, 'name': 'Action'}, ...]
     if s.startswith("[") and "name" in s:
         import ast
 
@@ -77,6 +69,45 @@ def _parse_genres_cell(cell: str) -> list[str]:
 
     parts = re.split(r"[,\|/]+", s)
     return [p.strip().lower() for p in parts if p.strip()]
+
+
+def _expand_genre_aliases(tokens: list[str]) -> list[str]:
+    alias_map = {
+        "sf": "science fiction",
+        "sci-fi": "science fiction",
+        "sci fi": "science fiction",
+        "scifi": "science fiction",
+        "science-fiction": "science fiction",
+        "romcom": "romance",
+        "rom-com": "romance",
+        "kids": "family",
+        "kid": "family",
+        "children": "family",
+        "childrens": "family",
+        "super hero": "superhero",
+        "super-hero": "superhero",
+        "super heroes": "superhero",
+        "suspense": "thriller",
+    }
+
+    expanded: list[str] = []
+    for t in tokens:
+        t_norm = _normalize_space(t).lower()
+        if not t_norm:
+            continue
+        expanded.append(t_norm)
+        mapped = alias_map.get(t_norm)
+        if mapped:
+            expanded.append(mapped)
+
+    # 중복 제거 + 순서 유지
+    seen = set()
+    out = []
+    for x in expanded:
+        if x not in seen:
+            seen.add(x)
+            out.append(x)
+    return out
 
 
 def _engine_enabled(
@@ -223,6 +254,21 @@ class RuntimeEngine:
         except Exception:
             self._genres_cache = {}
 
+        # genres_cache sanity check
+        try:
+            sample_row = self.df.iloc[0]
+            sample_mid = int(sample_row["movie_id"])
+            sample_raw = sample_row.get("genres", "")
+            sample_parsed = self._genres_cache.get(sample_mid, [])
+            non_empty_count = sum(1 for v in self._genres_cache.values() if v)
+            print(f"[RuntimeEngine] sample raw genres = {sample_raw}")
+            print(f"[RuntimeEngine] sample parsed genres = {sample_parsed}")
+            print(
+                f"[RuntimeEngine] genres_cache non-empty = {non_empty_count}/{len(self._genres_cache)}"
+            )
+        except Exception as e:
+            print(f"[RuntimeEngine] genres_cache sanity check skipped: {e}")
+
     def _apply_sort(self, df: pd.DataFrame, sort: str) -> pd.DataFrame:
         if sort == "latest":
             return df.sort_values("release_date", ascending=False, na_position="last")
@@ -250,6 +296,8 @@ class RuntimeEngine:
                 return default
 
         tmdb_poster_url = str(row.get("tmdb_poster_url", "") or "").strip()
+        genres_list = self._genres_cache.get(movie_id, [])
+        genres_display = ", ".join([g.title() for g in genres_list]) if genres_list else ""
 
         return {
             "movie_id": movie_id,
@@ -258,6 +306,8 @@ class RuntimeEngine:
             "overview": row.get("overview", ""),
             "tagline": row.get("tagline", ""),
             "genres": row.get("genres", ""),
+            "genres_list": genres_list,
+            "genres_display": genres_display,
             "tmdb_poster_url": tmdb_poster_url,
             "poster_url": tmdb_poster_url,
             "poster_path": row.get("poster_path", ""),
@@ -267,6 +317,138 @@ class RuntimeEngine:
             "release_date": row.get("release_date", ""),
             "runtime": _to_int(row.get("runtime", 0), 0),
         }
+
+    def _genre_search(
+        self,
+        *,
+        query: str,
+        sort: str = "popular",
+        candidate_k: int = 700,
+        debug: bool = False,
+        debug_payload: Optional[Dict[str, Any]] = None,
+    ) -> Union[List[Dict], Dict[str, Any]]:
+        q = _normalize_space(query).lower()
+        if not q:
+            if not debug:
+                return []
+            payload = dict(debug_payload or {})
+            payload["fusion_method"] = "genre_filter"
+            payload["error"] = "empty_query"
+            return {"results": [], "debug": payload}
+
+        q_tokens = [t.strip().lower() for t in re.split(r"[,\|/]+", q) if t.strip()]
+        if not q_tokens:
+            q_tokens = [q]
+
+        q_tokens = _expand_genre_aliases(q_tokens)
+
+        matched_rows = []
+        debug_rows = []
+
+        for _, row in self.df.iterrows():
+            try:
+                movie_id = int(row.get("movie_id", 0))
+            except Exception:
+                continue
+
+            genres_list = self._genres_cache.get(movie_id, [])
+            if not genres_list:
+                continue
+
+            overlap = []
+            for qt in q_tokens:
+                for g in genres_list:
+                    g_norm = _normalize_space(g).lower()
+                    if qt == g_norm or qt in g_norm or g_norm in qt:
+                        overlap.append(g_norm)
+
+            overlap = sorted(set(overlap))
+            genre_overlap = len(overlap)
+            if genre_overlap <= 0:
+                continue
+
+            try:
+                popularity = float(row.get("popularity", 0.0) or 0.0)
+            except Exception:
+                popularity = 0.0
+
+            try:
+                vote_average = float(row.get("vote_average", 0.0) or 0.0)
+            except Exception:
+                vote_average = 0.0
+
+            try:
+                vote_count = float(row.get("vote_count", 0.0) or 0.0)
+            except Exception:
+                vote_count = 0.0
+
+            base_score = (
+                genre_overlap * 100.0
+                + vote_average * 2.0
+                + popularity * 0.05
+                + min(vote_count, 5000) * 0.0002
+            )
+
+            matched_rows.append(
+                {
+                    "movie_id": movie_id,
+                    "row": row,
+                    "genre_overlap": genre_overlap,
+                    "matched_genres": overlap,
+                    "base_score": float(base_score),
+                }
+            )
+
+        if sort == "latest":
+            matched_rows.sort(
+                key=lambda x: (
+                    str(x["row"].get("release_date", "") or ""),
+                    float(x["base_score"]),
+                ),
+                reverse=True,
+            )
+        elif sort == "rating":
+            matched_rows.sort(
+                key=lambda x: (
+                    float(x["row"].get("vote_average", 0.0) or 0.0),
+                    float(x["base_score"]),
+                ),
+                reverse=True,
+            )
+        else:
+            matched_rows.sort(key=lambda x: float(x["base_score"]), reverse=True)
+
+        movies: List[Dict[str, Any]] = []
+        for item in matched_rows[: int(candidate_k)]:
+            card = self._row_to_card(item["row"])
+            card["score"] = float(item["base_score"])
+            card["genre_overlap"] = int(item["genre_overlap"])
+            card["matched_genres"] = item["matched_genres"]
+            movies.append(card)
+
+            if len(debug_rows) < min(debug_payload.get("debug_top_k", 20) if debug_payload else 20, 50):
+                debug_rows.append(
+                    {
+                        "movie_id": int(item["movie_id"]),
+                        "title": card.get("title"),
+                        "genre_overlap": int(item["genre_overlap"]),
+                        "matched_genres": item["matched_genres"],
+                        "score": float(item["base_score"]),
+                    }
+                )
+
+        if not debug:
+            return movies
+
+        payload = dict(debug_payload or {})
+        payload["fusion_method"] = "genre_filter"
+        payload["query_tokens"] = q_tokens
+        payload["matched_count"] = len(movies)
+        payload["engine_top"] = {
+            "genre_top": debug_rows,
+        }
+        payload["result_count"] = len(movies)
+        return {"results": movies, "debug": payload}
 
     # ============================================================
     # Flask main.py compatibility methods
@@ -294,7 +476,6 @@ class RuntimeEngine:
 
         movie = self._row_to_card(row.iloc[0])
 
-        # 상세 화면 편의 필드
         genres_list = self._genres_cache.get(movie_id, [])
         movie["genres_list"] = genres_list
         movie["genres_display"] = ", ".join([g.title() for g in genres_list]) if genres_list else ""
@@ -348,7 +529,6 @@ class RuntimeEngine:
             except Exception:
                 vote_count = 0.0
 
-            # 장르 겹침 우선 + 대중성/평점 보조
             score = (
                 genre_overlap * 10.0
                 + popularity * 0.05
@@ -393,6 +573,7 @@ class RuntimeEngine:
             "sort": sort,
             "candidate_k": int(candidate_k),
             "enabled_engines": enabled_engines or {},
+            "debug_top_k": int(debug_top_k),
         }
 
         # ------------------------------
@@ -462,7 +643,6 @@ class RuntimeEngine:
             else:
                 sbert_scores = {}
 
-            # RRF params
             k = 40
             w_clip = 1.0
             w_sbert = 0.9
@@ -489,7 +669,6 @@ class RuntimeEngine:
             pool_ids = set(clip_rank.keys()) | set(sbert_rank.keys())
 
             fused: list[tuple[int, float, float, float]] = []
-            # (mid, rrf_score, clip_term, sbert_term)
             for mid in pool_ids:
                 rc = clip_rank.get(mid, 10**9)
                 rs = sbert_rank.get(mid, 10**9)
@@ -501,7 +680,6 @@ class RuntimeEngine:
 
             fused.sort(key=lambda x: x[1], reverse=True)
 
-            # cut policy
             max_results = 600
             min_results = 120
 
@@ -626,7 +804,19 @@ class RuntimeEngine:
             return {"results": movies, "debug": debug_payload}
 
         # ------------------------------
-        # TEXT SEARCH (score fusion)
+        # GENRE SEARCH
+        # ------------------------------
+        if search_type == "genre" and has_query:
+            return self._genre_search(
+                query=query,
+                sort=sort,
+                candidate_k=candidate_k,
+                debug=debug,
+                debug_payload=debug_payload,
+            )
+
+        # ------------------------------
+        # TEXT SEARCH
         # ------------------------------
         if search_type == "text" and has_query:
             if _looks_like_gibberish(query):
@@ -671,6 +861,18 @@ class RuntimeEngine:
                 raw = sbert_engine.score(query, top_k=int(candidate_k), min_score=0.10) or {}
                 sbert_scores = {int(mid): float(sc) for mid, sc in raw.items()}
 
+            if not tfidf_scores and not sbert_scores and not title_hits:
+                if not debug:
+                    return []
+                debug_payload["fusion_method"] = "score_fusion"
+                debug_payload["engine_counts"] = {
+                    "tfidf_scores_total": 0,
+                    "sbert_scores_total": 0,
+                    "title_hits": 0,
+                }
+                debug_payload["result_count"] = 0
+                return {"results": [], "debug": debug_payload}
+
             base_w = dict(HYBRID_WEIGHTS.get("text", {}) or {})
             w = {
                 "tfidf": float(base_w.get("tfidf", 0.0)) if use_tfidf else 0.0,
@@ -704,7 +906,12 @@ class RuntimeEngine:
                 return {"results": movies, "debug": debug_payload}
 
             movies: List[Dict] = []
-            for item in ranked_items:
+            contrib_rows: List[Dict[str, Any]] = []
+
+            tfidf_max = max(tfidf_scores.values()) if tfidf_scores else 0.0
+            sbert_max = max(sbert_scores.values()) if sbert_scores else 0.0
+
+            for i, item in enumerate(ranked_items, start=1):
                 try:
                     mid = int(item.get("movie_id"))
                 except Exception:
@@ -721,85 +928,64 @@ class RuntimeEngine:
                 card = self._row_to_card(row.iloc[0])
                 card["score"] = score
 
+                tfidf_raw = float(tfidf_scores.get(mid, 0.0))
+                sbert_raw = float(sbert_scores.get(mid, 0.0))
+
+                tfidf_norm = (tfidf_raw / tfidf_max) if tfidf_max > 0 else 0.0
+                sbert_norm = (sbert_raw / sbert_max) if sbert_max > 0 else 0.0
+
+                card["tfidf_score"] = tfidf_raw
+                card["sbert_score"] = sbert_raw
+                card["tfidf_norm"] = tfidf_norm
+                card["sbert_norm"] = sbert_norm
+                card["tfidf_contrib"] = float(w["tfidf"] * tfidf_norm)
+                card["sbert_contrib"] = float(w["sbert"] * sbert_norm)
+                card["dominant_engine"] = (
+                    "tfidf" if card["tfidf_contrib"] >= card["sbert_contrib"] else "sbert"
+                )
+
                 title = str(card.get("title", "")).lower()
                 overview = str(card.get("overview", "")).lower()
                 hay = title + " " + overview
 
                 if any(t in hay for t in tokens):
                     movies.append(card)
-                    continue
-
-                if score >= 0.35:
+                elif score >= 0.35:
                     movies.append(card)
 
-            if sort in ("latest", "rating", "popular") and movies:
-                try:
-                    temp_df = pd.DataFrame(movies)
-                    temp_df = self._apply_sort(temp_df, sort)
-                    movies = temp_df.to_dict(orient="records")
-                except Exception:
-                    pass
+                if i <= min(debug_top_k, 50):
+                    contrib_rows.append(
+                        {
+                            "final_rank": i,
+                            "movie_id": mid,
+                            "title": card.get("title"),
+                            "score": float(card["score"]),
+                            "tfidf_raw": tfidf_raw,
+                            "sbert_raw": sbert_raw,
+                            "tfidf_norm": tfidf_norm,
+                            "sbert_norm": sbert_norm,
+                            "tfidf_contrib": float(card["tfidf_contrib"]),
+                            "sbert_contrib": float(card["sbert_contrib"]),
+                            "dominant_engine": card["dominant_engine"],
+                        }
+                    )
 
             if title_hits:
-                seen = set()
-                merged: List[Dict] = []
-                for m in title_hits + movies:
-                    mid = m.get("movie_id")
-                    if mid in seen:
-                        continue
-                    seen.add(mid)
-                    merged.append(m)
-                movies = merged
+                existing_ids = {int(m.get("movie_id", 0)) for m in movies}
+                boosted = [m for m in title_hits if int(m.get("movie_id", 0)) not in existing_ids]
+                movies = boosted + movies
 
             if not debug:
                 return movies
 
-            tfidf_norm = _normalize(tfidf_scores) if tfidf_scores else {}
-            sbert_norm = _normalize(sbert_scores) if sbert_scores else {}
-
-            union_ids = set(tfidf_scores.keys()) | set(sbert_scores.keys())
-            overlap = set(tfidf_scores.keys()) & set(sbert_scores.keys())
-
             debug_payload["fusion_method"] = "score_fusion"
             debug_payload["weights"] = w
+            debug_payload["tokens"] = tokens
             debug_payload["engine_counts"] = {
-                "tfidf_n": len(tfidf_scores),
-                "sbert_n": len(sbert_scores),
-                "union_ids": len(union_ids),
-                "overlap_tfidf_sbert": len(overlap),
+                "tfidf_scores_total": len(tfidf_scores),
+                "sbert_scores_total": len(sbert_scores),
+                "title_hits": len(title_hits),
             }
-
-            contrib_rows: List[Dict[str, Any]] = []
-            for i, m in enumerate(movies[: min(debug_top_k, 50)], start=1):
-                mid = int(m.get("movie_id", 0))
-                tf = float(tfidf_norm.get(mid, 0.0))
-                sb = float(sbert_norm.get(mid, 0.0))
-                tf_c = tf * float(w.get("tfidf", 0.0))
-                sb_c = sb * float(w.get("sbert", 0.0))
-                dom = "tfidf" if tf_c >= sb_c else "sbert"
-
-                m["tfidf_norm"] = tf
-                m["sbert_norm"] = sb
-                m["tfidf_contrib"] = tf_c
-                m["sbert_contrib"] = sb_c
-                m["dominant_engine"] = dom
-
-                contrib_rows.append(
-                    {
-                        "final_rank": i,
-                        "movie_id": mid,
-                        "title": m.get("title"),
-                        "final_score": float(m.get("score", 0.0)),
-                        "tfidf_norm": tf,
-                        "sbert_norm": sb,
-                        "tfidf_contrib": tf_c,
-                        "sbert_contrib": sb_c,
-                        "dominant_engine": dom,
-                        "present_tfidf": mid in tfidf_scores,
-                        "present_sbert": mid in sbert_scores,
-                    }
-                )
-
             debug_payload["engine_top"] = {
                 "tfidf_top": _safe_top_items(tfidf_scores, top_k=min(debug_top_k, 30)),
                 "sbert_top": _safe_top_items(sbert_scores, top_k=min(debug_top_k, 30)),
@@ -811,6 +997,5 @@ class RuntimeEngine:
         if not debug:
             return []
 
-        debug_payload["fusion_method"] = "none"
-        debug_payload["result_count"] = 0
+        debug_payload["error"] = "unsupported_search_type_or_empty_input"
         return {"results": [], "debug": debug_payload}
